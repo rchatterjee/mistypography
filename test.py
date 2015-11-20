@@ -2,7 +2,6 @@
 import os, sys, json, csv, re
 import unittest
 from checker import Checker
-from pwmodel import PWModel
 
 class TestEdits(unittest.TestCase):
     def test_modify(self):
@@ -45,7 +44,6 @@ class TestEdits(unittest.TestCase):
 
     def test_Checker(self):
         # policy1 - accepts all
-        pwmodel = PWModel(fname='rockyou1M.json.gz')
         aserver = Checker([], 1)
         for pw in ['flower', 'password', '1234567', ]:
             self.assertTrue(pw in aserver.BLACK_LIST, "{} should be in BLACK_LIST: {}"\
@@ -54,7 +52,7 @@ class TestEdits(unittest.TestCase):
         top3 = ['same', 'swc-all', 'swc-first','rm-lastc']
 
         policy = 1
-        aserver = Checker(top5, policy, pwmodel=pwmodel)
+        aserver = Checker(top5, policy)
         for pw,res in (zip(['password1', '1234567', '#df46gd!@`'], 
                            [set(['password1', 'PASSWORD1', 'Password1','password', 'assword1', 'password!']), 
                             set(['1234567', '123456', '123456&', '234567']),
@@ -78,7 +76,7 @@ class TestEdits(unittest.TestCase):
                             .format(pw, policy, res, aserver.check(pw)))
 
         policy = 4
-        aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy, pwmodel=pwmodel)
+        aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy)
         for pw,res in (zip(['password', '1234567', '#df46gd!@`'], 
                        [set(['password']), 
                         set(['1234567']),
@@ -89,7 +87,7 @@ class TestEdits(unittest.TestCase):
         # print "Policy: {}. Fix: {}".format(policy, aserver.typo_fix_rate())
 
         policy = 5
-        aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy, pwmodel=pwmodel)
+        aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy)
         for pw,res in (zip(['password', '1234567', '#df46gd!@`', 'RAULARTURO'], 
                        [set(['password']), 
                         set(['1234567']),
