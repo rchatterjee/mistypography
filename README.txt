@@ -1,11 +1,17 @@
-* Dependency
+#  MIS-TYPOGRAPHY
+
+
+
+## REQUIREMENTS
+---------------
 
 This is a purely python based project with no dependency other than
 standard python 2.7 impelementation.
 
 
 
-* How to use?  
+## HOW TO USE?  
+--------------
 
 Basically one would like to create the ball of correction given a
 entered password. The simplest way to do this is instantiate a Checker
@@ -25,7 +31,7 @@ in common.py for DATA_DIR_PATH.
 Python 2.7.6 (default, Jun 22 2015, 17:58:13) 
 [GCC 4.8.2] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
->>> from common import top3correctors
+>>> from common import top3correctors, top5correctors
 
 >>> from checker import Checker
 data/rockyou1M.json.gz
@@ -38,3 +44,13 @@ set(['password1'])
 >>> chk.get_ball('password123')
 set(['PASSWORD123', 'Password123', 'password123'])
 
+>>> chk = Checker(top5correctors, 1)
+
+>>> chk.get_ball('password123')
+set(['password12', 'password12#', 'PASSWORD123', 'Password123', 'assword123', 'password123'])
+
+
+
+## CONTACT
+---------
+     - Rahul Chatterjee (rahul@cs.cornell.edu)
