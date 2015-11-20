@@ -1,0 +1,11 @@
+*.pdf
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*~
+*.pyc
+*.gz
+auto/
+.idea/

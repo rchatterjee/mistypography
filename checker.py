@@ -5,8 +5,9 @@ import string, re
 import unittest, string
 from collections import defaultdict
 from correctors import fast_modify, EDITS_NAME_FUNC_MAP
+from pwmodel import PWModel
 import heapq
-from common import (PW_FILTER, THIS_DIR, get_most_val_under_prob, TYPO_FIX_PROB)
+from common import (PW_FILTER, DATA_DIR_PATH, get_most_val_under_prob, TYPO_FIX_PROB)
 
 
 class Checker(object):
@@ -28,15 +29,16 @@ class Checker(object):
     transform_list = []
     transform_list_prob = {}
 
-    #BLACK_LIST = set(x.strip() for x in open(os.path.join(THIS_DIR, "data/banned_list_ry1k.txt")))
-    BLACK_LIST = set(x.strip() for x in open(os.path.join(THIS_DIR, "data/banned_list_twt.txt")))
-    def __init__(self, _transform_list, policy_num=1, pwmodel=None):
+    #BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_ry1k.txt")))
+    BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_twt.txt")))
+    PWMODEL = PWModel(fname='rockyou1M.json.gz')
+    def __init__(self, _transform_list, policy_num=1):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
             self.transform_list = ['same'] + self.transform_list
         self.policy_num = policy_num
         self.check = eval("self.policy%d" % policy_num)
-        self.pwmodel = pwmodel 
+        self.pwmodel = self.PWMODEL
 
         q = 1000  # Fix the q
         self._q = q

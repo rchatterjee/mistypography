@@ -45,7 +45,7 @@ class TestEdits(unittest.TestCase):
 
     def test_Checker(self):
         # policy1 - accepts all
-        pwmodel = PWModel(fname='data/rockyou1M.json.gz')
+        pwmodel = PWModel(fname='rockyou1M.json.gz')
         aserver = Checker([], 1)
         for pw in ['flower', 'password', '1234567', ]:
             self.assertTrue(pw in aserver.BLACK_LIST, "{} should be in BLACK_LIST: {}"\

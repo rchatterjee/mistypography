@@ -4,6 +4,7 @@ import tarfile, gzip
 import itertools
 
 THIS_DIR = os.path.dirname(__file__)
+DATA_DIR_PATH = os.path.join(THIS_DIR, 'data/')
 
 MIN_PROB = 1e-9  # default probability of a password, if not found in the dict.
 MIN_LENGHT_PW = 6   # Only consider passwords with length 6 or more
@@ -11,6 +12,7 @@ MIN_LENGHT_PW = 6   # Only consider passwords with length 6 or more
 # A filter to not consider passwords that are not ascii only, or shorter than
 # 6 characters
 PW_FILTER = lambda x: is_asciistring(x) and len(x)>=MIN_LENGHT_PW
+
 
 
 ## All allowed correctors
@@ -31,6 +33,10 @@ ALLOWED_EDITS = [
     # 'up2cap',    # 12
     # 'n2s-last',  # 13
 ]
+
+top2correctors = ALLOWED_EDITS[:3]
+top3correctors = ALLOWED_EDITS[:4]
+top5correctors = ALLOWED_EDITS[:6]
 
 
 ## Number of passwords fixed by each correctors

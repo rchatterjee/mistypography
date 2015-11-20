@@ -14,7 +14,8 @@ import sys, os, json
 from collections import OrderedDict, defaultdict
 import gzip
 import heapq
-from common import MIN_LENGHT_PW, MIN_PROB, open_
+from common import (MIN_LENGHT_PW, MIN_PROB, open_,
+                    DATA_DIR_PATH)
 
 
 class PWModel(object):
@@ -33,7 +34,7 @@ class PWModel(object):
 
         """
         if not os.path.exists(fname):
-            fname = os.path.join(THIS_DIR, fname)
+            fname = os.path.join(DATA_DIR_PATH, fname)
         self.fname = fname
         self.PW2FREQ_map = json.load(open_(fname), object_pairs_hook=OrderedDict)
         self.leakname = fname.split('.', 1)[0]
