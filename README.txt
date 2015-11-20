@@ -1,7 +1,6 @@
 # MISTYPOGRAPHY
 
 
-
 ## REQUIREMENTS
 ---------------
 
