@@ -91,8 +91,8 @@ class TestEdits(unittest.TestCase):
         for pw,res in (zip(['password', '1234567', '#df46gd!@`', 'RAULARTURO'], 
                        [set(['password']), 
                         set(['1234567']),
-                        set(['#df46gd!@`', '#Df46gd!@`']), 
-                        set(['raularturo', 'RAULARTURO'])])):
+                        set(['#df46gd!@`', '#DF46GD!@`', '#Df46gd!@`']), 
+                        set(['raularturo', 'rAULARTURO', 'RAULARTURO'])])):
             self.assertTrue(res==aserver.check(pw), "Output of {} for policy={} failed."\
                             "\nExpecting: {},\nGot: {}"\
                             .format(pw, policy, res, aserver.check(pw)))

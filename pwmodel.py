@@ -46,7 +46,7 @@ class PWModel(object):
 
     def get(self, pw):
         """Returns the probability of the password."""
-        return self.PW2FREQ_map.get(pw, 0.0)/self._total_freq
+        return max(self.PW2FREQ_map.get(pw, 0.0)/self._total_freq, MIN_PROB)
 
     def pw2frec(self, pw):
         """Returns the frequency of the password. (This function is hardly used)"""
