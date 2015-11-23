@@ -270,7 +270,7 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
             tpw = [tpw]
         elif not isinstance(tpw, list):
             print "WTF!! tpw ('{!r}') is of type = {}".format(tpw, type(tpw))
-            exit(0)
+            raise ValueError
         mutated_words |= set(filter(pw_filter, tpw))
     return mutated_words
 

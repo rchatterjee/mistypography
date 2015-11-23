@@ -7,7 +7,9 @@ from collections import defaultdict
 from correctors import fast_modify, EDITS_NAME_FUNC_MAP
 from pwmodel import PWModel
 import heapq
-from common import (PW_FILTER, DATA_DIR_PATH, get_most_val_under_prob, TYPO_FIX_PROB)
+from common import (PW_FILTER, DATA_DIR_PATH, 
+                    get_most_val_under_prob, TYPO_FIX_PROB,
+                    top2correctors, top3correctors, top5correctors)
 
 
 class Checker(object):
@@ -31,7 +33,8 @@ class Checker(object):
 
     #BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_ry1k.txt")))
     BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_twt.txt")))
-    PWMODEL = PWModel(fname='rockyou1M.json.gz')
+    #PWMODEL = PWModel(fname='rockyou1M.json.gz')
+    PWMODEL = PWModel(fname='rockyou20k.json.gz')
     def __init__(self, _transform_list, policy_num=1):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
@@ -85,7 +88,7 @@ class Checker(object):
 
     def policy1(self, tpw, rpw=None):
         """This policy is just breat the ball around tpw using given the
-        transforms and checks whether or not rpw in that ball
+        transforms and checks whether or not rpw in that ball, also called ChkAll
         """
         B = fast_modify(tpw, apply_edits=self.transform_list)
         if rpw:
@@ -95,7 +98,7 @@ class Checker(object):
     
     def policy2(self, tpw, rpw=None):
         """
-        Dont allow any password within the blacklisted set of passwords
+        Dont allow any password within the blacklisted set of passwords, a.k.a, ChkBl
         """
         black_list_filter = lambda x: (len(x)>=6) and (x not in Checker.BLACK_LIST)
         B = fast_modify(tpw, apply_edits=self.transform_list, pw_filter=black_list_filter)
@@ -107,7 +110,7 @@ class Checker(object):
 
     def policy3(self, tpw, rpw=None):
         """
-        Allow at most one password from the black list
+        Allow at most one password from the black list. (Not used in the paper)
         """
         black_list = []
         B = []
@@ -133,7 +136,7 @@ class Checker(object):
     def policy4(self, tpw, rpw=None):
         """
         Don't correct a tpw if the size of the ball is bigger than
-        rpw_q, requires exact pwmodel
+        rpw_q, requires exact pwmodel, (Not used in the paper)
         """
         if rpw and tpw==rpw:
             return True
@@ -150,7 +153,7 @@ class Checker(object):
 
     def policy5(self, tpw, rpw=None):
         """
-        Same as policy 4, but approximate info about pwmodel
+        Same as policy 4, but approximate info about pwmodel, ChkAOp
         """
         black_list = []
         A = defaultdict(int)
@@ -172,5 +175,30 @@ class Checker(object):
         else:
             return B
 
+################################################################################
+# Different preimplemented checkers
+################################################################################ 
+BUILT_IN_CHECKERS = {
+    # ChkAll checkers with all three corrector sets
+    "ChkAllTop2": Checker(top2correctors, 1),
+    "ChkAllTop3": Checker(top3correctors, 1),
+    "ChkAllTop5": Checker(top5correctors, 1),
 
+    # ChkBl checkers with all three corrector sets
+    "ChkBlTop2": Checker(top2correctors, 2),
+    "ChkBlTop3": Checker(top3correctors, 2),
+    "ChkBlTop5": Checker(top5correctors, 2),
+
+    # ChkAOp checkers with all three corrector sets
+    "ChkAOpTop2": Checker(top2correctors, 5),
+    "ChkAOpTop3": Checker(top3correctors, 5),
+    "ChkAOpTop5": Checker(top5correctors, 5),
+
+    # ChkAll with singleton corrector sets
+    "ChkAll_swcall": Checker(['swc-all'], 1),
+    "ChkAll_swcfirst": Checker(['swc-first'], 1),
+    "ChkAll_rmlastc": Checker(['rm-lastc'], 1),
+    "ChkAll_rmfirstc": Checker(['rm-firstc'], 1),
+    "ChkAll_swslast": Checker(['sws-last1'], 1)
+}
 
