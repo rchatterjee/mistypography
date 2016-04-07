@@ -1,8 +1,8 @@
 # MISTYPOGRAPHY
-
+This module implements different typo correction strategies discussed
+in https://www.cs.cornell.edu/~rahul/papers/pwtypos.pdf.
 
 ## REQUIREMENTS
----------------
 
 This is a purely python based project with no dependency other than
 standard python 2.7 impelementation.
@@ -10,7 +10,6 @@ standard python 2.7 impelementation.
 
 
 ## HOW TO USE?  
---------------
 
 Basically one would like to create the ball of correction given a
 entered password. The simplest way to do this is instantiate a Checker
@@ -25,7 +24,7 @@ Note, the checker needs the data directory to be in the same
 folder. You can move the 'data' directory but then you have set the path
 in common.py for DATA_DIR_PATH.
 
-
+```bash
 [rahul @ code/dropbox] [master]$ python
 Python 2.7.6 (default, Jun 22 2015, 17:58:13) 
 [GCC 4.8.2] on linux2
@@ -47,9 +46,8 @@ set(['PASSWORD123', 'Password123', 'password123'])
 
 >>> chk.get_ball('password123')
 set(['password12', 'password12#', 'PASSWORD123', 'Password123', 'assword123', 'password123'])
+```
 
 
-
-## CONTACT
----------
-     - Rahul Chatterjee (rahul@cs.cornell.edu)
+### CONTACT
+Rahul Chatterjee (rahul@cs.cornell.edu)
