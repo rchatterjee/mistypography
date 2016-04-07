@@ -209,7 +209,6 @@ EDITS_NAME_FUNC_MAP = {
     "cap2up": [capital_2_upper, upper_2_capital],  # typed shift instead of caps switch
     "n2s-last": [n2s_last, s2n_last] # convert last number to symbol
 }
-# ALLOWED_EDITS = EDITS_NAME_FUNC_MAP.keys()
 
 
 def modify(word, apply_edits=["All"], typo=False):
