@@ -1,17 +1,16 @@
 #!/usr/bin/python
 import os, sys, json, csv, re
-import unittest
 import socket
 import random
+import pytest
 
-class TestEdits(unittest.TestCase):
+class TestEdits:
     def test_Checker(self):
         from checker import Checker
         # policy1 - accepts all
         aserver = Checker([], 1)
         for pw in ['flower', 'password', '1234567', ]:
-            self.assertTrue(pw in aserver.BLACK_LIST, "{} should be in BLACK_LIST: {}"\
-                            .format(pw, aserver.BLACK_LIST))
+            assert pw in aserver.BLACK_LIST
         top5 = ['same', 'swc-all', 'swc-first','rm-lastc', 'rm-firstc', 'n2s-last']
         top3 = ['same', 'swc-all', 'swc-first','rm-lastc']
 
@@ -21,13 +20,9 @@ class TestEdits(unittest.TestCase):
                            [set(['password1', 'PASSWORD1', 'Password1','password', 'assword1', 'password!']), 
                             set(['1234567', '123456', '123456&', '234567']),
                         set(['#df46gd!@', '#df46gd!@`', 'df46gd!@`', '#Df46gd!@`', '#DF46GD!@`'])])):
-            self.assertTrue(res==aserver.check(pw), "Output of {} for policy={} failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, policy, res, aserver.check(pw)))
+            assert res==aserver.check(pw)
             for rpw in res:
-                self.assertTrue(pw in aserver.get_nh(rpw), "Neighborhood not correct. '{}'"
-                                " should be in nh({}) = {}"\
-                                .format(pw, rpw, aserver.get_nh(rpw)))
+                assert pw in aserver.get_nh(rpw)
 
         policy = 2
         aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy)
@@ -35,9 +30,7 @@ class TestEdits(unittest.TestCase):
                        [set(['password']), 
                         set(['1234567']),
                         set(['#DF46GD!@`', '#df46gd!@`', '#Df46gd!@`'])])):
-            self.assertTrue(res==aserver.check(pw), "Output of {} for policy={} failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, policy, res, aserver.check(pw)))
+            assert res==aserver.check(pw)
 
         policy = 4
         aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy)
@@ -45,10 +38,7 @@ class TestEdits(unittest.TestCase):
                        [set(['password']), 
                         set(['1234567']),
                         set(['#DF46GD!@`', '#df46gd!@`', '#Df46gd!@`'])])):
-            self.assertTrue(res==aserver.check(pw), "Output of {} for policy={} failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, policy, res, aserver.check(pw)))
-        # print "Policy: {}. Fix: {}".format(policy, aserver.typo_fix_rate())
+            assert res==aserver.check(pw)
 
         policy = 5
         aserver = Checker(['same', 'swc-all', 'swc-first', 'rm-lastd'], policy)
@@ -57,10 +47,7 @@ class TestEdits(unittest.TestCase):
                         set(['1234567']),
                         set(['#df46gd!@`', '#DF46GD!@`', '#Df46gd!@`']), 
                         set(['raularturo', 'rAULARTURO', 'RAULARTURO'])])):
-            self.assertTrue(res==aserver.check(pw), "Output of {} for policy={} failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, policy, res, aserver.check(pw)))
-        # print "Policy: {}. Fix: {}".format(policy, aserver.typo_fix_rate())
+            assert res==aserver.check(pw)
 
 
     def test_builtin_checkers(self):
@@ -70,22 +57,16 @@ class TestEdits(unittest.TestCase):
                            [set(['password1', 'PASSWORD1', 'Password1','password', 'assword1', 'password!']), 
                             set(['1234567', '123456', '123456&', '234567']),
                         set(['#df46gd!@', '#df46gd!@`', 'df46gd!@`', '#Df46gd!@`', '#DF46GD!@`', '#df46gd!@~'])])):
-            self.assertTrue(res==checker.get_ball(pw), "Output of {} for 'ChkAllTop5' failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, res, checker.get_ball(pw)))
+            assert res==checker.get_ball(pw)
             for rpw in res:
-                self.assertTrue(pw in checker.get_nh(rpw), "Neighborhood not correct. '{}'"
-                                " should be in nh({}) = {}"\
-                                .format(pw, rpw, checker.get_nh(rpw)))
+                assert pw in checker.get_nh(rpw)
 
         checker = BUILT_IN_CHECKERS['ChkBlTop3']
         for pw,res in (zip(['password', '1234567', '#df46gd!@`'], 
                        [set(['password', 'passwor']), 
                         set(['1234567']),
                         set(['#DF46GD!@`', '#df46gd!@`', '#Df46gd!@`', '#df46gd!@'])])):
-            self.assertTrue(res==checker.check(pw), "Output of {} for 'ChkBlTop3' failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, res, checker.get_ball(pw)))
+            assert res==checker.check(pw)
 
         checker = BUILT_IN_CHECKERS['ChkAOpTop3']        
         for pw,res in (zip(['password', '1234567', '#df46gd!@`', 'RAULARTURO'], 
@@ -93,16 +74,14 @@ class TestEdits(unittest.TestCase):
                         set(['1234567']),
                         set(['#df46gd!@`', '#DF46GD!@`', '#Df46gd!@`', '#df46gd!@']), 
                         set(['raularturo', 'rAULARTURO', 'RAULARTURO', 'RAULARTUR'])])):
-            self.assertTrue(res==checker.get_ball(pw), "Output of {} for 'ChkAOp' failed."\
-                            "\nExpecting: {},\nGot: {}"\
-                            .format(pw, res, checker.get_ball(pw)))
-        # # print "Policy: {}. Fix: {}".format(policy, aserver.typo_fix_rate())
+            assert res==checker.get_ball(pw)
+
         # for k, v in BUILT_IN_CHECKERS.items():
         #     for pw in ['password', '123456']:
         #         print k, v.get_ball(pw)
 
 
-class TestPWLogging(unittest.TestCase):
+class TestPWLogging:
     def test_logging(self):
         HOST, PORT = "localhost", 9999
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -119,4 +98,14 @@ class TestPWLogging(unittest.TestCase):
                 print "Cannot reach the logging server."
             #  TODO - write this test
 
-unittest.main()
+
+import correctors
+@pytest.mark.parametrize('w', ['word1', 'Rauhl', 'Nothing'])
+class TestCorrectors(object):
+    def test_delete_one_char(self, w):
+        assert len(set(correctors.delete_one_char(w))) == len(w)
+
+    def test_insert_one_char(self, w):
+        for tw in correctors.insert_one_char(w):
+            assert w in correctors.delete_one_char(tw)
+
