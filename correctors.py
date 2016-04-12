@@ -8,6 +8,7 @@ import string, re
 import unittest, string
 from collections import defaultdict
 from common import ALLOWED_EDITS
+from keyboard import Keyboard
 
 ALLOWED_CHARACTERS = string.letters + string.digits + '`~!@#$%^&*()_+-=,/?.<>;\':"[]{}\\| \t'
 NOTSHIFT_2_SHIFT_MAP = dict(zip('`1234567890-=[]\;\',./',
@@ -18,6 +19,7 @@ SHIFT_SWITCH_MAP = dict(zip('`1234567890-=[]\;\',./~!@#$%^&*()_+{}|:"<>?',
                             '~!@#$%^&*()_+{}|:"<>?`1234567890-=[]\;\',./'))
 SYMDIGIT_re = re.compile(r'(?P<last>(%s)+)$' % '|'.join(map(re.escape, SHIFT_SWITCH_MAP.keys())))
 
+KB = Keyboard('US')
 
 """This is the set of correctors we consider.  A corrector is a
 function which tries to fix a typo in a password but applying some
@@ -184,6 +186,51 @@ def remove_shift_last1(word):
     or, iop{} --> iop[]"""
     ch = word[-1]
     return word[:-1] + SHIFT_2_NOTSHIFT_MAP.get(ch, ch)
+
+
+################################################################################
+########################### Edit based correctors ##############################
+################################################################################
+def insert_one_char(word):
+    """insert 1 character in the word at some location. Returns a list of
+    modifications of @word
+    """
+    return [word[:i]+c+word[i:] 
+            for i in xrange(len(word))
+            for c in ALLOWED_CHARACTERS]
+
+def delete_one_char(word):
+    """
+    deletes one of the characters in the word.
+    """
+    return [word[:i]+word[i+1:] 
+            for i in xrange(len(word))]
+
+def replace_one_char(word):
+    """Replace each character in the word with a character from the
+    allowed character list (one at a time).
+    """
+    return [word[:i]+c+word[i+1:] 
+            for i in xrange(len(word))
+            for c in ALLOWED_CHARACTERS
+            if word[i] != c]
+
+def replace_keyboard_prox_chars(word):
+    """Replace each of the character in the word with a character that is
+    closed by in standard US keyboard.
+    """
+    return [word[:i]+c+word[i+1:]
+            for i in xrange(len(word))
+            for c in KB.keyboard_close_chars(word[i])]
+
+def edit_on_keypress_seq(word):
+    """Update the keypress sequence to obtain possible corrections. This will enable fewer number of possible corrections, and might lead to better correctors.
+    1.  First convert the string @word into key-press sequence. 
+    2.  Then try to insert/delete/replace characters and then move the key press sequence back to the original string. 
+    """
+
+    pass
+
 
 def check_invalid_edits(edits):
     """Checks if any of the corrector in the edits array is invalid or not defined""" 
