@@ -2,6 +2,7 @@ __author__ ='Rahul Chatterjee'
 import os, sys
 import tarfile, gzip
 import itertools
+import string
 
 THIS_DIR = os.path.dirname(__file__)
 DATA_DIR_PATH = os.path.join(THIS_DIR, 'data/')
@@ -13,6 +14,26 @@ MIN_LENGHT_PW = 6   # Only consider passwords with length 6 or more
 # 6 characters
 PW_FILTER = lambda x: is_asciistring(x) and len(x)>=MIN_LENGHT_PW
 
+user_friendly = 1
+BLANK = [u'\x00', '*'][user_friendly]   # '\b'
+STARTSTR = [u'\x01', '^'][user_friendly]
+ENDSTR = [u'\x02', '$'][user_friendly]
+
+SHIFT_KEY = [u'\x03', "<s>"][user_friendly]
+CAPS_KEY = [u'\x04', "<c>"][user_friendly]
+
+ALLOWED_KEYS = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./ "
+ALLOWED_CHARACTERS = string.letters + string.digits + '`~!@#$%^&*()_+-=,/?.<>;\':"[]{}\\| \t'
+
+ALLOWED_KEYS += BLANK + SHIFT_KEY + CAPS_KEY + STARTSTR + ENDSTR
+
+### Future work to do it on ALLOWED_KEYS ##
+ALLOWED_CHARACTERS += BLANK + STARTSTR + ENDSTR
+
+def dp(**kwargs):
+    print ''
+    print '\t'.join("%s: %s" % (k,str(v)) \
+                    for k,v in kwargs.items())
 
 
 ## All allowed correctors

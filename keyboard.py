@@ -1,6 +1,6 @@
 import Levenshtein as lv
 import re
-from common_func import SHIFT_KEY, CAPS_KEY
+from common import SHIFT_KEY, CAPS_KEY
 
 KEYBOARD_TYPE = 'US'
 layout_matrix = {
@@ -36,60 +36,68 @@ layout_matrix = {
 }
 
 
-class KeyPresses(object):
-    _keypress_list = []
-    _keypress_str = ''
-    _KB = None
+def key_presses_to_word(KB, keyseq):
+    """
+    Converts a keypress sequence to a word
+    """
+    pass
 
-    def __init__(self, KB, str):
-        self._KB = KB
-        self._str = str
-        self._keypress_str = self._set_key_presses(str)
-        self._keypress_list = list(self._keypress_str)
+def word_to_key_presses(KB, word):
+    """
+    Converts a @word into a key press sequence for the keyboard KB.
+    >>> KB = Keyboard('US')
+    >>> word_to_key_presses(KB, 'Password12!@')
+    <s>password12<s>1<s>2
+    >>> word_to_key_presses(KB, 'PASSword!@')
+    <c>pass</c>word<s>1<s>2
+    >>> word_to_key_presses(KB, 'PAasWOrd') # this is not what it should but close!
+    <s>p<s>aas<s>w<s>ord
+    <c>pa</c>as<c>wo</c>rd
+    """
+    caps_key = CAPS_KEY
+    shift_key = SHIFT_KEY
+    assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
+    shift_status = [0 for _ in word]
+    new_str = ''
+    # Add shift keys
+    for i, ch in enumerate(word):
+        r, c, shift = KB.loc(ch)
+        rk = KB.loc2char(r*KB.num_shift(), c)
+        # if ch.isalpha() and shift:
+        #     new_str += caps_key + rk + caps_key
+        # el
+        if shift:
+            new_str += shift_key + rk
+        else:
+            new_str += rk
 
-    def key_presses(self):
-        return self._keypress_list
+    # finding continuous use of shift and replace that with capslock
+    for s in re.findall(r'(({0}[a-z]){{2,}})'.format(shift_key), new_str):
+        o_s, _ = s
+        n_s = re.sub(r'{0}([a-z])'.format(shift_key), r'\1'.format(caps_key), o_s)
+        new_str = re.sub(re.escape(o_s), '{0}{1}{0}'.format(caps_key, n_s), new_str)
 
-    def key_press_string(self):
-        return ''.join(self._keypress_list)
-
-    def _set_key_presses(self, word):
-        caps_key = CAPS_KEY
-        shift_key = SHIFT_KEY
-        assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
-        shift_status = [0 for _ in word]
-        new_str = ''
-        for i, ch in enumerate(word):
-            r, c, shift = self._KB.loc(ch)
-            rk = self._KB.loc2char(r*self._KB.num_shift(), c)
-            if ch.isalpha() and shift:
-                new_str += caps_key + rk + caps_key
-            elif shift:
-                new_str += shift_key + rk
-            else:
-                new_str += rk
-
-        old_str = ''
-        while (not old_str) and old_str != new_str:
-            old_str = new_str
-
-            new_str = re.sub(r'%s([0-9]+)' % caps_key, r'\1%s' % caps_key, new_str)
-            # drop <c>-<s>-. --> <s>-.-<c>
-            new_str = re.sub('%s(%s.)' % (caps_key, shift_key), r'\1%s' % caps_key, new_str)
-            new_str = re.sub(r'{0}{0}'.format(caps_key), '', new_str)  # drop continuous caps locks
-            if not new_str:
-                break
-        new_str = re.sub(r'{0}(.){0}'.format(caps_key), r'{}\1'.format(shift_key),
-                         new_str)  # drop <c>a<c> to <s>a
-        new_str = re.sub(r'%s$' % caps_key, '', new_str)   # drop last caps
-        new_str = re.sub(r'([a-z])%s' % caps_key, '%s%s\1' % (caps_key, shift_key), new_str)
-        return new_str
-
-    def __len__(self):
-        return len(self._keypress_list)
-
-    def __str__(self):
-        return self._keypress_str
+    old_str = ''
+    while (not old_str) and old_str != new_str:
+        old_str = new_str
+        new_str = re.sub(r'{0}([a-z]){0}([a-z]){0}([a-z])'.format(shift_key),
+                         r'{0}\1\2\3{0}'.format(caps_key),
+                         new_str)
+        # <c>1 --> 1<c>
+        new_str = re.sub(r'%s([0-9]+)' % caps_key, r'\1%s' % caps_key, new_str)
+        # drop <c>-<s>-. --> <s>-.-<c>
+        new_str = re.sub('%s(%s.)' % (caps_key, shift_key), r'\1%s' % caps_key, new_str)
+        new_str = re.sub(r'{0}{0}'.format(caps_key), '', new_str)  # drop continuous caps locks
+        if not new_str:
+            break
+    new_str = re.sub(r'{0}(.){0}'.format(caps_key),
+                     r'{}\1'.format(shift_key),
+                     new_str)  # drop <c>a<c> to <s>a
+    new_str = re.sub(r'%s$' % caps_key, '', new_str)   # drop last caps
+    # new_str = re.sub(r'([a-z])%s' % caps_key, 
+    #                  r'%s%s\1' % (caps_key, shift_key), 
+    #                  new_str)
+    return new_str
 
 
 class Keyboard(object):
@@ -206,8 +214,22 @@ class TestKeyPresses():
             assert kb.loc(*q) == r
 
 import pytest
-class TestKeyboard():
+class TestKeyPresses():
 
+    def test_word_to_key_press(self):
+        key = {'c': CAPS_KEY,
+               's': SHIFT_KEY}
+        KB = Keyboard('US')
+        ind_res_map = [('PAasWOrd', '{c}pa{c}as{c}wo{c}rd'),
+                       ('password', 'password'),
+                       ('Password', '{s}password'),
+                       ('P@ssword12', '{s}p{s}2ssword12'),
+                       ('@!asdASDads', '{s}2{s}1asd{c}asd{c}ads')
+        ]
+        for q,r in ind_res_map:
+            assert word_to_key_presses(KB, q) == r.format(**key)
+
+class TestKeyboard():
     def test_loc(self):
         inp_res_map = [(('t'), (1,5,0)),
                       (('T'), (1,5,1)),
@@ -241,13 +263,14 @@ class TestKeyboard():
 
 
 if __name__ == '__main__':
-    kb = Keyboard('US', user_friendly=1)
+    kb = Keyboard('US')
     pw1 = 'PASSWORD123|'
-    pw2 = 'Password!@#\\'
-    p1 = KeyPresses(kb, pw1)
-    p2 = KeyPresses(kb, pw2)
-    print pw1, p1
-    print pw2, p2
+    pw2 = 'PAasWOrd'
+    p1 = word_to_key_presses(kb, pw1)
+    p2 = word_to_key_presses(kb, pw2)
+    print "{!r} -> {!r}".format(pw2, p2)
+    print "{!r} -> {!r}".format(pw2, p2)
 
-    print lv.distance(p1, p2)
-    print lv.editops(p1, p2)
+
+    # print lv.distance(str(p1), str(p2))
+    # print lv.editops(str(p1), str(p2))
