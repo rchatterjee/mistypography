@@ -102,10 +102,10 @@ class TestPWLogging:
 import correctors
 @pytest.mark.parametrize('w', ['word1', 'Rauhl', 'Nothing'])
 class TestCorrectors(object):
-    def test_delete_one_char(self, w):
-        assert len(set(correctors.delete_one_char(w))) == len(w)
+    def test_length_delete_one_char(self, w):
+        assert len(set(correctors.delete_one_char(w))) == len(w) or \
+            len(set(w))<len(w)
 
     def test_insert_one_char(self, w):
         for tw in correctors.insert_one_char(w):
             assert w in correctors.delete_one_char(tw)
-
