@@ -36,12 +36,6 @@ layout_matrix = {
 }
 
 
-def key_presses_to_word(KB, keyseq):
-    """
-    Converts a keypress sequence to a word
-    """
-    pass
-
 def word_to_key_presses(KB, word):
     """
     Converts a @word into a key press sequence for the keyboard KB.
@@ -61,15 +55,11 @@ def word_to_key_presses(KB, word):
     new_str = ''
     # Add shift keys
     for i, ch in enumerate(word):
-        r, c, shift = KB.loc(ch)
-        rk = KB.loc2char(r*KB.num_shift(), c)
-        # if ch.isalpha() and shift:
-        #     new_str += caps_key + rk + caps_key
-        # el
+        ch, shift = KB.remove_shift(ch)
         if shift:
-            new_str += shift_key + rk
+            new_str += shift_key + ch
         else:
-            new_str += rk
+            new_str += ch
 
     # finding continuous use of shift and replace that with capslock
     for s in re.findall(r'(({0}[a-z]){{2,}})'.format(shift_key), new_str):
@@ -78,26 +68,40 @@ def word_to_key_presses(KB, word):
         new_str = re.sub(re.escape(o_s), '{0}{1}{0}'.format(caps_key, n_s), new_str)
 
     old_str = ''
-    while (not old_str) and old_str != new_str:
-        old_str = new_str
-        new_str = re.sub(r'{0}([a-z]){0}([a-z]){0}([a-z])'.format(shift_key),
-                         r'{0}\1\2\3{0}'.format(caps_key),
-                         new_str)
-        # <c>1 --> 1<c>
-        new_str = re.sub(r'%s([0-9]+)' % caps_key, r'\1%s' % caps_key, new_str)
-        # drop <c>-<s>-. --> <s>-.-<c>
-        new_str = re.sub('%s(%s.)' % (caps_key, shift_key), r'\1%s' % caps_key, new_str)
-        new_str = re.sub(r'{0}{0}'.format(caps_key), '', new_str)  # drop continuous caps locks
-        if not new_str:
-            break
     new_str = re.sub(r'{0}(.){0}'.format(caps_key),
                      r'{}\1'.format(shift_key),
                      new_str)  # drop <c>a<c> to <s>a
-    new_str = re.sub(r'%s$' % caps_key, '', new_str)   # drop last caps
+    # new_str = re.sub(r'%s$' % caps_key, '', new_str)   # drop last caps
     # new_str = re.sub(r'([a-z])%s' % caps_key, 
     #                  r'%s%s\1' % (caps_key, shift_key), 
     #                  new_str)
     return new_str
+
+def key_presses_to_word(KB, keyseq):
+    """
+    Converts a keypress sequence to a word
+    """
+    caps_key = CAPS_KEY
+    shift_key = SHIFT_KEY
+    assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
+    capsloc_state = 0
+    def isspecialkey(w, key):
+        if re.match(r'^{0}.*'.format(key), w):
+            return True
+        return False
+    word = keyseq
+    def addshift(m):
+        return ''.join(KB.add_shift(c)[0] for c in m.group(1))
+    # change all shift keys
+    word = re.sub(r'{0}([\w\W])'.format(re.escape(shift_key)), 
+                  addshift, word)
+    print word
+    # change all capslocks
+    word = re.sub(r'{0}(\w+){0}'.format(re.escape(caps_key)),
+                  addshift, word)
+    print word
+    return word
+
 
 
 class Keyboard(object):
@@ -116,11 +120,23 @@ class Keyboard(object):
 
     def char2key(self, char, capslock_state):
         assert self._keyboard_type == 'US', "Not yet supported non-US keyboards"
-        r, c, shift = self.loc(char)
+        r, c, shift = self.loc(self, char)
         if capslock_state == 1 and char.isalpha():   # caps lock is on
             shift = (shift+1) % 2  # No need to press shift
         return shift, self._keyboard[r*self._num_shift][c]
 
+    def remove_shift(self, char):
+        r, c, shift = self.loc(char)
+        if shift:
+            char = self.loc2char(r*self._num_shift, c)
+        return char, shift
+
+    def add_shift(self, char):
+        r, c, shift = self.loc(char)
+        if not shift:
+            char = self.loc2char(r*self._num_shift+1, c)
+        return char, shift
+        
     def loc(self, char):
         """
         return location of a key, the row, column and shift on
@@ -265,11 +281,12 @@ class TestKeyboard():
 if __name__ == '__main__':
     kb = Keyboard('US')
     pw1 = 'PASSWORD123|'
-    pw2 = 'PAasWOrd'
+    #    pw2 = 'PAasWOrd'
     p1 = word_to_key_presses(kb, pw1)
-    p2 = word_to_key_presses(kb, pw2)
-    print "{!r} -> {!r}".format(pw2, p2)
-    print "{!r} -> {!r}".format(pw2, p2)
+    pw11 = key_presses_to_word(kb, p1)
+    #   p2 = word_to_key_presses(kb, pw2)
+    print "{!r} -> {!r} --> {!r}".format(pw1, p1, pw11)
+    #    print "{!r} -> {!r}".format(pw2, p2)
 
 
     # print lv.distance(str(p1), str(p2))

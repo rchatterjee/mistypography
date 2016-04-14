@@ -223,12 +223,21 @@ def replace_keyboard_prox_chars(word):
             for i in xrange(len(word))
             for c in KB.keyboard_close_chars(word[i])]
 
+def make_smart_corrections(word):
+    """Edit based corrections, but all edits (insert, delete and keyboard close
+    substitution) done together.  CAUTION: returns a really large list
+    (~200*len(word))
+
+    """
+    return insert_one_char(word) + delete_one_char(word) + replace_keyboard_prox_chars(word)
+    
+
 def edit_on_keypress_seq(word):
     """Update the keypress sequence to obtain possible corrections. This will enable fewer number of possible corrections, and might lead to better correctors.
     1.  First convert the string @word into key-press sequence. 
     2.  Then try to insert/delete/replace characters and then move the key press sequence back to the original string. 
     """
-
+    
     pass
 
 
