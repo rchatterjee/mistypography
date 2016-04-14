@@ -34,7 +34,7 @@ class Checker(object):
     #BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_ry1k.txt")))
     BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_twt.txt")))
     #PWMODEL = PWModel(fname='rockyou1M.json.gz')
-    PWMODEL = PWModel(fname='rockyou20k.json.gz')
+    PWMODEL = PWModel(fname='rockyou1M.json.gz')
     def __init__(self, _transform_list, policy_num=1):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
