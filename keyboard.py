@@ -95,11 +95,9 @@ def key_presses_to_word(KB, keyseq):
     # change all shift keys
     word = re.sub(r'{0}([\w\W])'.format(re.escape(shift_key)), 
                   addshift, word)
-    print word
     # change all capslocks
     word = re.sub(r'{0}(\w+){0}'.format(re.escape(caps_key)),
                   addshift, word)
-    print word
     return word
 
 
@@ -135,6 +133,11 @@ class Keyboard(object):
         r, c, shift = self.loc(char)
         if not shift:
             char = self.loc2char(r*self._num_shift+1, c)
+        return char, shift
+        
+    def chage_shift(self, word):
+        r, c, shift = self.loc(char)
+        char = self.loc2char(r*self._num_shift + (shift+1)%self._num_shift, c)
         return char, shift
         
     def loc(self, char):
@@ -221,30 +224,37 @@ def find_typo_type(word_o, word_t):
     pass
 
 
+
+import pytest
+@pytest.mark.parametrize(('inp', 'res'),
+                         [('PAasWOrd', '{c}pa{c}as{c}wo{c}rd'),
+                          ('password', 'password'),
+                          ('Password', '{s}password'),
+                          ('P@ssword12', '{s}p{s}2ssword12'),
+                          ('@!asdASDads', '{s}2{s}1asd{c}asd{c}ads'),
+                          # There is this small issue, what if there is a shit in the middle of a password
+                          ('PASSwoRD',  '{c}pass{c}wo{c}rd{c}')]
+)
 class TestKeyPresses():
+    def test_word_to_key_press(self, inp, res):
+        key = {'c': CAPS_KEY,
+               's': SHIFT_KEY}
+        KB = Keyboard('US')
+        assert word_to_key_presses(KB, inp) == res.format(**key)
+
+    def test_key_presses_to_word(self, inp, res):
+        key = {'c': CAPS_KEY,
+               's': SHIFT_KEY}
+        KB = Keyboard('US')
+        assert inp == key_presses_to_word(KB, res.format(**key))
+
     def test_key_press(self):
         inp_res_map = [(('|'), (1,13,1))
                        ]
         kb = Keyboard('US')
         for q, r in inp_res_map:
             assert kb.loc(*q) == r
-
-import pytest
-class TestKeyPresses():
-
-    def test_word_to_key_press(self):
-        key = {'c': CAPS_KEY,
-               's': SHIFT_KEY}
-        KB = Keyboard('US')
-        ind_res_map = [('PAasWOrd', '{c}pa{c}as{c}wo{c}rd'),
-                       ('password', 'password'),
-                       ('Password', '{s}password'),
-                       ('P@ssword12', '{s}p{s}2ssword12'),
-                       ('@!asdASDads', '{s}2{s}1asd{c}asd{c}ads')
-        ]
-        for q,r in ind_res_map:
-            assert word_to_key_presses(KB, q) == r.format(**key)
-
+    
 class TestKeyboard():
     def test_loc(self):
         inp_res_map = [(('t'), (1,5,0)),
