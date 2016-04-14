@@ -3,6 +3,7 @@ import os, sys, json, csv, re
 import socket
 import random
 import pytest
+from keyboard import Keyboard, SHIFT_KEY, CAPS_KEY
 
 class TestEdits:
     def test_Checker(self):
@@ -80,6 +81,84 @@ class TestEdits:
         #     for pw in ['password', '123456']:
         #         print k, v.get_ball(pw)
 
+class TestKeyPresses():
+    @pytest.mark.parametrize(('inp', 'res'),
+                             [('PAasWOrd', '{c}pa{c}as{c}wo{c}rd'),
+                              ('password', 'password'),
+                              ('Password', '{s}password'),
+                              ('P@ssword12', '{s}p{s}2ssword12'),
+                              ('@!asdASDads', '{s}2{s}1asd{c}asd{c}ads'),
+                              # There is this small issue, what if there is a shit in the middle of a password
+                              ('PASSwoRD',  '{c}pass{c}wo{c}rd{c}')]
+    )
+    def test_word_to_key_press(self, inp, res):
+        key = {'c': CAPS_KEY,
+               's': SHIFT_KEY}
+        KB = Keyboard('US')
+        assert KB.word_to_key_presses(inp) == res.format(**key)
+
+    @pytest.mark.parametrize(('inp', 'res'),
+                             [('PAasWOrd', '{c}pa{c}as{c}wo{c}rd'),
+                              ('password', 'password'),
+                              ('Password', '{s}password'),
+                              ('P@ssword12', '{s}p{s}2ssword12'),
+                              ('@!asdASDads', '{s}2{s}1asd{c}asd{c}ads'),
+                              # There is this small issue, what if there is a shit in the middle of a password
+                              ('PASSwoRD',  '{c}pass{c}wo{c}rd{c}')]
+    )
+    def test_key_presses_to_word(self, inp, res):
+        key = {'c': CAPS_KEY,
+               's': SHIFT_KEY}
+        KB = Keyboard('US')
+        assert inp == KB.key_presses_to_word(res.format(**key))
+
+    def test_other_key_presses_to_word(self):
+        key = {'c': CAPS_KEY,
+               's': SHIFT_KEY}
+        KB = Keyboard('US')
+        kw = KB.key_presses_to_word('{c}asdf{s}1{c}sdf'.format(**key))
+        assert 'ASDFAsdf' == KB.key_presses_to_word('{c}asdf{s}a{c}sdf'.format(**key))
+        print kw
+        assert 'ASDF!sdf' == KB.key_presses_to_word('{c}asdf{s}1{c}sdf'.format(**key))
+                                       
+    def test_key_press(self):
+        inp_res_map = [(('|'), (1,13,1))
+                       ]
+        kb = Keyboard('US')
+        for q, r in inp_res_map:
+            assert kb.loc(*q) == r
+    
+class TestKeyboard():
+    def test_loc(self):
+        inp_res_map = [(('t'), (1,5,0)),
+                      (('T'), (1,5,1)),
+                      (('a'), (2,1,0)),
+                      (('('), (0,9,1)),
+                      (('M'), (3,7,1))]
+        kb = Keyboard('US')
+        for q, r in inp_res_map:
+            assert kb.loc(*q) == r
+
+    def test_keyboard_dist(self):
+        inp_res_map = [(('t', 't'), (0)),
+                       (('t', 'T'), (0.8)),
+                       (('a', 'S'), (1.8)),
+                       (('a', 'w'), (2)),
+                       (('w', '$'), (3.8)),
+                       (('<', '>'), (1))
+                   ]
+        kb = Keyboard('US')
+        for q, r in inp_res_map:
+            assert kb.keyboard_dist(*q) == r
+
+
+    @pytest.mark.parametrize(('inp', 'res'), [('a', 'AQWSXZqwsxz'),
+                                               ('g', 'GRTYHNBVFrtyhnbvf'),
+                                               ('r', 'R#$%TGFDE345tgfde')])
+    def test_key_close_chars(self, inp, res):
+        kb = Keyboard('US')
+        ret = kb.keyboard_close_chars(inp)
+        assert set(ret) == set(res)
 
 class TestPWLogging:
     def test_logging(self):
@@ -109,3 +188,12 @@ class TestCorrectors(object):
     def test_insert_one_char(self, w):
         for tw in correctors.insert_one_char(w):
             assert w in correctors.delete_one_char(tw)
+
+    def test_key_presses_edit(self, w):
+        w = 'password'
+        ball = set(correctors.edit_on_keypress_seq(w))
+        for i in xrange(20):
+            r = random.randint(1, len(w)-1)
+            l = len(w)#r + random.randint(1, len(w)-r)
+            w = w[:r] + w[r:l].upper() + w[l:]
+            assert w in ball

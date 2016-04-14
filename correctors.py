@@ -8,6 +8,7 @@ import string, re
 import unittest, string
 from collections import defaultdict
 from common import ALLOWED_EDITS
+import common
 from keyboard import Keyboard
 
 ALLOWED_CHARACTERS = string.letters + string.digits + '`~!@#$%^&*()_+-=,/?.<>;\':"[]{}\\| \t'
@@ -233,12 +234,23 @@ def make_smart_corrections(word):
     
 
 def edit_on_keypress_seq(word):
-    """Update the keypress sequence to obtain possible corrections. This will enable fewer number of possible corrections, and might lead to better correctors.
-    1.  First convert the string @word into key-press sequence. 
-    2.  Then try to insert/delete/replace characters and then move the key press sequence back to the original string. 
+    """Update the keypress sequence to obtain possible corrections. This
+    will enable fewer number of possible corrections, and might lead
+    to better correctors.  
+    1. First convert the string @word into
+       key-press sequence.  
+    2. Then try to insert/delete/replace
+       characters and then move the key press sequence back to the
+       original string.
+    # TODO - add typo model to it
     """
-    
-    pass
+
+    keypress_w = KB.word_to_key_presses(word)
+    allowed_keys = common.ALLOWED_KEYS # except capsloc
+    return [KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
+            for i in xrange(len(keypress_w))
+            for k in list(allowed_keys) + ['']
+    ]
 
 
 def check_invalid_edits(edits):
@@ -330,3 +342,8 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
     return mutated_words
 
 
+
+if __name__ == "__main__":
+    ball = set(edit_on_keypress_seq('Password'))
+    print ball
+    print len(ball)
