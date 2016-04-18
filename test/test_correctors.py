@@ -1,5 +1,8 @@
 import pytest
-import correctors
+from context import correctors
+from context import Checker, BUILT_IN_CHECKERS
+import random
+
 @pytest.mark.parametrize('w', ['word1', 'Rauhl', 'Nothing'])
 class TestCorrectors(object):
     def test_length_delete_one_char(self, w):
@@ -21,7 +24,6 @@ class TestCorrectors(object):
 
 class TestEdits:
     def test_Checker(self):
-        from checker import Checker
         # policy1 - accepts all
         aserver = Checker([], 1)
         for pw in ['flower', 'password', '1234567', ]:
@@ -66,7 +68,6 @@ class TestEdits:
 
 
     def test_builtin_checkers(self):
-        from checker import BUILT_IN_CHECKERS
         checker = BUILT_IN_CHECKERS['ChkAllTop5']
         for pw,res in (zip(['password1', '1234567', '#df46gd!@`'], 
                            [set(['password1', 'PASSWORD1', 'Password1','password', 'assword1', 'password!']), 

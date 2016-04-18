@@ -1,4 +1,6 @@
 import pytest
+from context import Keyboard, SHIFT_KEY, CAPS_KEY
+
 class TestKeyPresses():
     @pytest.mark.parametrize(('inp', 'res'),
                              [('PAasWOrd', '{c}pa{c}as{c}wo{c}rd'),
