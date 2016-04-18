@@ -10,3 +10,4 @@
 auto/
 .idea/
 .cache/
+.env
