@@ -224,11 +224,10 @@ def replace_keyboard_prox_chars(word):
             for i in xrange(len(word))
             for c in KB.keyboard_close_chars(word[i])]
 
-def make_smart_corrections(word):
+def make_all_edits(word):
     """Edit based corrections, but all edits (insert, delete and keyboard close
-    substitution) done together.  CAUTION: returns a really large list
-    (~200*len(word))
-
+    substitution) done together.  
+    CAUTION: returns a really large list (~200*len(word))
     """
     return insert_one_char(word) + delete_one_char(word) + replace_keyboard_prox_chars(word)
     
@@ -256,8 +255,7 @@ def edit_on_keypress_seq(word):
 def check_invalid_edits(edits):
     """Checks if any of the corrector in the edits array is invalid or not defined""" 
     assert all(e in ALLOWED_EDITS for e in edits), "Some edit is not in the list: {}".format(edits)
-
-
+    
 # This is a funcname to func map, first entry in the value part is transform, 
 # second one is the typos that it can fix.
 EDITS_NAME_FUNC_MAP = {

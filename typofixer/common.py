@@ -3,6 +3,7 @@ import os, sys
 import tarfile, gzip
 import itertools
 import string
+import bz2
 
 THIS_DIR = os.path.dirname(__file__)
 DATA_DIR_PATH = os.path.join(THIS_DIR, 'data/')
@@ -158,5 +159,39 @@ def open_(filename, mode='r'):
     else:
         f = open(filename, mode);
     return f;
+
+
+def get_line(file_object, limit=-1, pw_filter=lambda x: True):
+    regex = re.compile(r'\s*([0-9]+) (.*)$')
+    i = 0
+    for l in file_object:
+        if limit>0 and limit<=i:
+            break
+        m = regex.match(l)
+        if not m:
+            warning ("REGEX FAIL: ", l)
+        c, w = m.groups()
+        c = int(c)
+        w = w.replace('\x00', '\\x00')
+        try:
+            w = w.decode('utf-8', errors='replace')
+        except UnicodeDecodeError:
+            #try with latin1
+            warning("Error in decoding: ({} {}). Line: {}. Ignoring!"\
+                    .format(w, c, l))
+            continue
+        if w and pw_filter(w) and c>0:
+            i += 1
+            yield w,c
+        else:
+            pass
+            #warning ("Filter Failed or malformed string: ", w, c)
+
+
+def open_get_line(filename, limit=-1, **kwargs):
+    with open_(filename) as f:
+        for w,c in get_line(f, limit, **kwargs):
+            yield w, c
+
 
 
