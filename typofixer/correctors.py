@@ -246,10 +246,10 @@ def edit_on_keypress_seq(word):
 
     keypress_w = KB.word_to_key_presses(word)
     allowed_keys = common.ALLOWED_KEYS # except capsloc
-    return [KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
+    return set([KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
             for i in xrange(len(keypress_w))
             for k in list(allowed_keys) + ['']
-    ]
+    ])
 
 
 def check_invalid_edits(edits):
@@ -273,7 +273,11 @@ EDITS_NAME_FUNC_MAP = {
     "upncap": [upper_n_capital, upper_n_capital],  # typed caps instead of shift switch
     "up2cap": [upper_2_capital, upper_2_capital],  # typed caps instead of shift switch
     "cap2up": [capital_2_upper, upper_2_capital],  # typed shift instead of caps switch
-    "n2s-last": [n2s_last, s2n_last] # convert last number to symbol
+    "n2s-last": [n2s_last, s2n_last], # convert last number to symbol
+    "insert1": [insert_one_char, delete_one_char],
+    "delete1": [delete_one_char, insert_one_char],
+    "edit-all": [make_all_edits, make_all_edits],
+    "keypress-edit": [edit_on_keypress_seq, edit_on_keypress_seq],
 }
 
 

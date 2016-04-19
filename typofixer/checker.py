@@ -5,7 +5,7 @@ import string, re
 import unittest, string
 from collections import defaultdict
 from correctors import fast_modify, EDITS_NAME_FUNC_MAP
-from pwmodel import PWModel
+from pwmodel import HistModel, NGramPw
 import heapq
 from common import (PW_FILTER, DATA_DIR_PATH, 
                     get_most_val_under_prob, TYPO_FIX_PROB,
@@ -34,7 +34,8 @@ class Checker(object):
     #BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_ry1k.txt")))
     BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_twt.txt")))
     #PWMODEL = PWModel(fname='rockyou1M.json.gz')
-    PWMODEL = PWModel(fname='rockyou1M.json.gz')
+    # PWMODEL = HistModel(pwfilename='rockyou')
+    PWMODEL = NGramPw(pwfilename='/home/rahul/passwords/rockyou-withcount.txt.bz2', n=4)
     def __init__(self, _transform_list, policy_num=1):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
@@ -45,8 +46,9 @@ class Checker(object):
 
         q = 1000  # Fix the q
         self._q = q
-        if self.pwmodel:
-            self.rpw_q = self.pwmodel.qth_pw(q)[1]
+        # if self.pwmodel:
+        #     self.rpw_q = self.pwmodel.qth_pw(q)[1]
+        self.rpw_q = -1.0
         self.setup_typo_probs()
 
     def setup_typo_probs(self):
@@ -151,6 +153,15 @@ class Checker(object):
         else:
             return B
 
+    def topq_sorted_by_pwmodel(self, tpw, rpw=None):
+        """
+        applies keypress eidts, sorts the ball by pwmodel, and outputs top q
+        """
+        q = 5
+        return heapq.nlargest(q, EDITS_NAME_FUNC_MAP['keypress-edit'][0](tpw),
+                              key=lambda rpw: self.pwmodel.prob(rpw))
+
+
     def policy5(self, tpw, rpw=None):
         """
         Same as policy 4, but approximate info about pwmodel, ChkAOp
@@ -202,3 +213,7 @@ BUILT_IN_CHECKERS = {
     "ChkAll_swslast": Checker(['sws-last1'], 1)
 }
 
+if __name__ == '__main__':
+    chk = Checker(top2correctors, 1)
+    print "{} -> {}".format(sys.argv[1], 
+                                   chk.topq_sorted_by_pwmodel(sys.argv[1]))
