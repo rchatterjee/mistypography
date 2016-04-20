@@ -66,11 +66,18 @@ class Checker(object):
             B |= self.get_ball(tpw)
         return B
 
+    @property
+    def max_ball_size(self):
+        return len(self.transform_list)
+
+    @property
+    def max_nh_size(self):
+        return 10*len(self.transform_list)
+
     def get_nh(self, rpw):
         return fast_modify(rpw, self.transform_list,
                                       typo=True, pw_filter=PW_FILTER)
         
-
     def set_approx_pwmodel(self, q):
         """Approx pw model is we divide the pw dist into 3 steps, first high
         probable zone, then mid prob zone and finally low probablity
