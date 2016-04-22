@@ -14,7 +14,7 @@ class TestCorrectors(object):
             assert w in correctors.delete_one_char(tw)
 
     def test_key_presses_edit(self, w):
-        w = 'password'
+        w = 'Password12!'
         ball = set(correctors.edit_on_keypress_seq(w))
         for i in xrange(20):
             r = random.randint(1, len(w)-1)

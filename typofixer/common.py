@@ -60,7 +60,7 @@ ALLOWED_EDITS = [
 top2correctors = ALLOWED_EDITS[:3]
 top3correctors = ALLOWED_EDITS[:4]
 top5correctors = ALLOWED_EDITS[:6]
-
+home= os.path.expanduser('~')
 
 ## Number of passwords fixed by each correctors
 TYPO_FIX_PROB = {

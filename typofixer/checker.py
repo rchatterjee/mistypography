@@ -5,11 +5,11 @@ import string, re
 import unittest, string
 from collections import defaultdict
 from correctors import fast_modify, EDITS_NAME_FUNC_MAP
-from pwmodel import HistModel, NGramPw
+from pwmodel import HistPw, NGramPw
 import heapq
 from common import (PW_FILTER, DATA_DIR_PATH, 
                     get_most_val_under_prob, TYPO_FIX_PROB,
-                    top2correctors, top3correctors, top5correctors)
+                    top2correctors, top3correctors, top5correctors, home)
 
 
 class Checker(object):
@@ -35,7 +35,7 @@ class Checker(object):
     BLACK_LIST = set(x.strip() for x in open(os.path.join(DATA_DIR_PATH, "banned_list_twt.txt")))
     #PWMODEL = PWModel(fname='rockyou1M.json.gz')
     # PWMODEL = HistModel(pwfilename='rockyou')
-    PWMODEL = NGramPw(pwfilename='/home/rahul/passwords/rockyou-withcount.txt.bz2', n=4)
+    PWMODEL = NGramPw(pwfilename='%s/passwords/rockyou-withcount.txt.bz2' % home, n=4)
     def __init__(self, _transform_list, policy_num=1):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
@@ -152,8 +152,10 @@ class Checker(object):
         B = fast_modify(tpw, apply_edits=self.transform_list)
         B.add(tpw)
         ballmass = sum(self.pwmodel.get(tpw) for tpw in B)
+        if self.rpw_q < 0.0:
+            self.rpw_q = 0.0001
         if ballmass > self.rpw_q:   # Sorry no typo correction 
-            # print "Sorry no typo corr for: {} -> {}".format(tpw, B)
+            # print "Sorry no typo corr for: {} -> {}, (ballmass: {})".format(tpw, B, ballmass)
             B = set([tpw])
         if rpw:
             return rpw in B

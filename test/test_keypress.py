@@ -37,7 +37,7 @@ class TestKeyPresses():
                's': SHIFT_KEY}
         KB = Keyboard('US')
         kw = KB.key_presses_to_word('{c}asdf{s}1{c}sdf'.format(**key))
-        assert 'ASDFAsdf' == KB.key_presses_to_word('{c}asdf{s}a{c}sdf'.format(**key))
+        assert 'ASDFasdf' == KB.key_presses_to_word('{c}asdf{s}a{c}sdf'.format(**key))
         print kw
         assert 'ASDF!sdf' == KB.key_presses_to_word('{c}asdf{s}1{c}sdf'.format(**key))
                                        
