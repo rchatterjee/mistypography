@@ -69,7 +69,7 @@ class Keyboard(object):
             char = self.loc2char(r*self._num_shift+1, c)
         return char, shift
         
-    def chage_shift(self, word):
+    def change_shift(self, char):
         r, c, shift = self.loc(char)
         char = self.loc2char(r*self._num_shift + (shift+1)%self._num_shift, c)
         return char, shift
@@ -184,6 +184,11 @@ class Keyboard(object):
         #                  new_str)
         return new_str
 
+    def print_key_press(self, keyseq):
+        """print the @key_str as the human readable format.
+        """
+        return keyseq.replace(SHIFT_KEY, '<s>').replace(CAPS_KEY, '<c>')
+        
     def key_presses_to_word(self, keyseq):
         """
         Converts a keypress sequence to a word
@@ -194,10 +199,17 @@ class Keyboard(object):
 
         word = keyseq
         def addshift(m):
-            return ''.join(self.add_shift(c)[0] for c in m.group(1))
+            return ''.join(self.change_shift(c)[0] for c in m.group(1))
 
         if word.count(caps_key)%2 == 1:
             word += caps_key
+
+        word = re.sub(r'({0})+([\W\w])'.format(shift_key), r'\1\2', word)
+        word = re.sub(r'({0})+([\W\w])'.format(caps_key), r'\1\2', word)
+        word = re.sub(r'({1}{0})+([\W\w])'.format(caps_key, shift_key),
+                      r'{0}{1}'.format(caps_key, shift_key),
+                      word)
+
         try:
             # apply all shift keys
             word = re.sub(r'{0}([\w\W])'.format(shift_key),
@@ -206,6 +218,7 @@ class Keyboard(object):
             word = re.sub(r'{0}([\W\w]+?){0}'.format(caps_key),
                           addshift, word)
         except:
+            print ">>>> I could not figure this out: {!r}, stuck at {!r}".format(keyseq, word)
             return ''
         return word
 

@@ -246,10 +246,16 @@ def edit_on_keypress_seq(word):
 
     keypress_w = KB.word_to_key_presses(word)
     allowed_keys = common.ALLOWED_KEYS # except capsloc
-    return set([KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
+    ret = [
+        KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
+            for k in list(allowed_keys)
             for i in xrange(len(keypress_w))
-            for k in list(allowed_keys) + ['']
-    ])
+    ] + [
+        KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:])\
+        for k in list(allowed_keys) + ['']
+        for i in xrange(len(keypress_w))
+    ]
+    return ret
 
 
 def check_invalid_edits(edits):
@@ -347,5 +353,7 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
 
 if __name__ == "__main__":
     ball = set(edit_on_keypress_seq('Password'))
+    assert not set(["PASSWORD", "Password", "pASSWORD", "password", "Passwor"])-ball
+    
     print ball
     print len(ball)
