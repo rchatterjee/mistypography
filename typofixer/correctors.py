@@ -6,7 +6,7 @@ LICENSED to modify and distribute any or all parts of the code.
 import os, sys, json, csv
 import string, re
 import unittest, string
-from collections import defaultdict
+from collections import defaultdict, Iterable
 from common import ALLOWED_EDITS
 import common
 from keyboard import Keyboard
@@ -234,29 +234,57 @@ def make_all_edits(word):
         + replace_keyboard_prox_chars(word)
     
 
-def edit_on_keypress_seq(word):
+def edit_on_keypress_seq_typo(word):
     """Update the keypress sequence to obtain possible corrections. This
     will enable fewer number of possible corrections, and might lead
     to better correctors.  
     1. First convert the string @word into
        key-press sequence.  
-    2. Then try to insert/delete/replace
+    2. Then try to insert/delete/replace proximity keys
        characters and then move the key press sequence back to the
        original string.
     # TODO - add typo model to it
+    #### this is the NEIGHTBORHOOD  the @word ###
     """
 
     keypress_w = KB.word_to_key_presses(word)
-    allowed_keys = common.ALLOWED_KEYS
-    return [
-        KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
-            for k in list(allowed_keys)
-            for i in xrange(len(keypress_w)+1)
-    ] + [
-        KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])\
-        for k in list(allowed_keys) + ['']
-        for i in xrange(len(keypress_w))
-    ]
+    allowed_keys = list(common.ALLOWED_KEYS)
+    spcl_keys = [common.SHIFT_KEY, common.CAPS_KEY]
+    for i, c in enumerate(keypress_w):
+        if c in spcl_keys:
+            keys_r = allowed_keys
+        else:
+            keys_r = KB.keyboard_prox_key(c) + spcl_keys
+        keys_i = set(keys_r + \
+                     (KB.keyboard_prox_key(keypress_w[i-1]) \
+                      if i>0 else allowed_keys))
+
+        for k in keys_i: # insert
+            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
+        for k in keys_r: # replace
+            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])
+
+        yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delet
+
+        if i == len(keypress_w)-1:
+            for k in allowed_keys:
+                yield KB.key_presses_to_word(keypress_w + k) # insert at the end
+
+def edit_on_keypress_seq_corr(word):
+    """
+    #### this is the BALL of the @word ###
+    """
+    keypress_w = KB.word_to_key_presses(word)
+    allowed_keys = list(common.ALLOWED_KEYS)
+    for i, c in enumerate(keypress_w):
+        for k in allowed_keys:
+            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
+            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:]) # replace
+        yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delete
+        if i == len(keypress_w)-1:  # insert at the end
+            for k in allowed_keys[:-2]:
+                yield KB.key_presses_to_word(keypress_w + k) # insert at the end
+
 
 
 def check_invalid_edits(edits):
@@ -285,7 +313,7 @@ EDITS_NAME_FUNC_MAP = {
     "del-1": [delete_one_char, insert_one_char], # delete 1 char anywhere
     "rep-1": [replace_one_char, replace_one_char], # replace any one char
     # "rep-1keyprox": [n2s_last, s2n_last] # replace keyboard-prox keys
-    "keypress-edit": [edit_on_keypress_seq, edit_on_keypress_seq],  # edit on key-press sequence
+    "keypress-edit": [edit_on_keypress_seq_corr, edit_on_keypress_seq_typo],  # edit on key-press sequence
 }
 
 
@@ -345,7 +373,7 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
             continue
         if isinstance(tpw, basestring):
             tpw = [tpw]
-        elif not isinstance(tpw, list):
+        elif not isinstance(tpw, Iterable):
             print "WTF!! tpw ('{!r}') is of type = {}".format(tpw, type(tpw))
             raise ValueError
         mutated_words |= set(filter(pw_filter, tpw))
@@ -354,8 +382,8 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
 
 
 if __name__ == "__main__":
-    w = 'wrahul1'
+    w = ' rahul123'
     ball = set(edit_on_keypress_seq(w))
-    print [w for w in ball if w.endswith('3')]
-    assert 'word123' in ball
+    print [w for w in ball if not w.startswith(' ')]
+    assert 'Rahul123' in ball
     print len(ball)

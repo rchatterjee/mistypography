@@ -33,10 +33,18 @@ class TestKeyboard():
     @pytest.mark.parametrize(('inp', 'res'), [('a', 'AQWSXZqwsxz'),
                                                ('g', 'GRTYHNBVFrtyhnbvf'),
                                                ('r', 'R#$%TGFDE345tgfde')])
-    def test_key_close_chars(self, inp, res):
+    def test_key_prox_chars(self, inp, res):
         kb = Keyboard('US')
         ret = kb.keyboard_prox_chars(inp)
         assert set(ret) == set(res)
+
+    def test_key_prox_keys(self):
+        kb = Keyboard('US')
+        for inp, res in [('a', 'aqwsxz'),
+                         ('t', 'tr456yhgf'),
+                         (';', ";lop['/.")]:
+            ret = kb.keyboard_prox_key(inp)
+            assert set(ret) == set(res)
 
 # class TestPWLogging:
 #     def test_logging(self):

@@ -155,7 +155,7 @@ class Keyboard(object):
         if char == SHIFT_KEY: 
             return [CAPS_KEY]
         elif char == CAPS_KEY:
-            return SHIFT_KEY
+            return [SHIFT_KEY]
 
         i, j, shift = self.loc(char)
         ret = []
@@ -163,7 +163,7 @@ class Keyboard(object):
         for r in range(i-1, i+2):
             for c in range(j-1, j+2):
                 ch = self.loc2char(r*num_shift, c)
-                if ch and ch != ' ' and ch != char:
+                if ch and ch != ' ':
                     ret.append(ch)
         return ret
 
@@ -197,19 +197,33 @@ class Keyboard(object):
                 new_str += ch
 
         # finding continuous use of shift and replace that with capslock
-        for s in re.findall(r'(({0}[a-z]){{2,}})'.format(shift_key), new_str):
+        for s in re.findall(r'(({0}[a-z]){{3,}})'.format(shift_key), new_str):
             o_s, _ = s
             n_s = re.sub(r'{0}([a-z])'.format(shift_key), r'\1'.format(caps_key), o_s)
             new_str = re.sub(re.escape(o_s), '{0}{1}{0}'.format(caps_key, n_s), new_str)
 
-        old_str = ''
+        
+        # drop <c>a<c> to <s>a
         new_str = re.sub(r'{0}(.){0}'.format(re.escape(caps_key)),
                          r'{}\1'.format(shift_key),
-                         new_str)  # drop <c>a<c> to <s>a
-        # new_str = re.sub(r'%s$' % caps_key, '', new_str)   # drop last caps
-        # new_str = re.sub(r'([a-z])%s' % caps_key, 
-        #                  r'%s%s\1' % (caps_key, shift_key), 
-        #                  new_str)
+                         new_str)  
+
+        # move the last capslock to the end
+        # PASSOWRD123 -> <c>password<c>123 -> <c>password123<c>
+        new_str = re.sub(r'{0}([^a-z]+)$'.format(re.escape(caps_key)),
+                         r'\1{0}'.format(caps_key),
+                         new_str)  
+        
+        # convert last sequence of shift into caps sequence
+        # passwoRD123 -> passwo<s>r<s>d123 -> passwo<c>rd123<c>
+        # r'(<s>[a-z][^a-z]*)+{2,}$ ->
+        m = re.match(r'.*?(?P<endshifts>({0}[a-z][^a-z{0}]*){{2,}}({0}.[^a-z]*)*)$'.format(shift_key), new_str)
+        if m:
+            s = m.group('endshifts')
+            ns = caps_key + re.sub(r'{0}([a-z])'.format(shift_key), r'\1', s) + caps_key
+            # print m.groups(), ns, s
+            new_str = new_str.replace(s, ns)
+
         return new_str
 
     def print_key_press(self, keyseq):
@@ -281,7 +295,7 @@ def find_typo_type(word_o, word_t):
 
 if __name__ == '__main__':
     kb = Keyboard('US')
-    pw1 = ' ord123'
+    pw1 = 'P@sswRD12!'
     #    pw2 = 'PAasWOrd'
     p1 = kb.word_to_key_presses(pw1)
     # p1 = '<c>asdf<s>1<c>123'

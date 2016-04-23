@@ -50,6 +50,8 @@ class Checker(object):
         #     self.rpw_q = self.pwmodel.qth_pw(q)[1]
         self.rpw_q = -1.0
         self.setup_typo_probs()
+        self._max_nh_size = -1
+        self._max_ball_size = -1
 
     def setup_typo_probs(self):
         tmp_d = {t: TYPO_FIX_PROB.get(t, -1.0) for t in self.transform_list}
@@ -58,7 +60,9 @@ class Checker(object):
                                        for t in self.transform_list}
 
     def get_ball(self, tpw):
-        return self.check(tpw)
+        ball = self.check(tpw)
+        self._max_ball_size = len(ball)
+        return ball
 
     def get_ball_union(self, tpwlist):
         B = set()
@@ -68,21 +72,24 @@ class Checker(object):
 
     @property
     def max_ball_size(self):
-        return len(self.transform_list)
+        return self._max_ball_size
 
     @property
     def max_nh_size(self):
-        return 10*len(self.transform_list) # TODO - fix this
+        return self._max_nh_size
 
     def get_nh(self, rpw):
-        return fast_modify(rpw, self.transform_list,
-                                      typo=True, pw_filter=PW_FILTER)
-        
+        nh = fast_modify(rpw, self.transform_list,
+                         typo=True, pw_filter=PW_FILTER)
+        self._max_nh_size = len(nh)
+        return nh
+
     def set_approx_pwmodel(self, q):
         """Approx pw model is we divide the pw dist into 3 steps, first high
         probable zone, then mid prob zone and finally low probablity
         zone.  For each zone there is a defacto probability is set,
         and any pw falling in that zone receives that prob
+
         """
         pass
 
