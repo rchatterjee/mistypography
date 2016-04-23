@@ -72,7 +72,7 @@ class Checker(object):
 
     @property
     def max_nh_size(self):
-        return 10*len(self.transform_list)
+        return 10*len(self.transform_list) # TODO - fix this
 
     def get_nh(self, rpw):
         return fast_modify(rpw, self.transform_list,

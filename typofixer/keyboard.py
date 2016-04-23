@@ -83,9 +83,10 @@ class Keyboard(object):
         """
         KM, num_shift = self._keyboard, self._num_shift
         if not self._loc_map:
-            for i, r in enumerate(KM):
-                for j, ch in enumerate(r):
-                    self._loc_map[ch] = (i/num_shift, j, i % num_shift)
+            self._loc_map = {ch: (i/num_shift, j, i % num_shift)
+                             for i, r in enumerate(KM)
+                             for j, ch in enumerate(r)}
+            self._loc_map[' '] = (3, 0, 0)
         if char not in self._loc_map:
             raise Exception( "Could not find location of: <{}>".format(repr(char)))
             
@@ -235,22 +236,22 @@ class Keyboard(object):
                            for c in m.group(1)
                            if c != caps_key)
 
+        word = re.sub(r'({0})+'.format(shift_key), r'\1', word)
+        word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
+        # word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
+        word = re.sub(r'({1}{0})+([a-zA-Z])'.format(caps_key, shift_key),
+                      r'{0}{1}\2'.format(caps_key, shift_key), 
+                      word)
+        # word = re.sub(r'({1}{0})+'.format(caps_key, shift_key),
+        #               '{0}{1}'.format(caps_key, shift_key),
+        #               word)
+
         if word.count(caps_key)%2 == 1:
             word += caps_key
 
-        word = re.sub(r'({0})+'.format(shift_key), r'\1', word)
-        word = re.sub(r'({0})+$'.format(shift_key), r'', word)
-        word = re.sub(r'({0}{0})+'.format(caps_key), r'\1', word)
-        # word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
-        word = re.sub(r'({0}{1})+'.format(caps_key, shift_key),
-                      r'\1'.format(caps_key, shift_key),
-                      word)
-        word = re.sub(r'({1}{0})+'.format(caps_key, shift_key),
-                      '{0}{1}'.format(caps_key, shift_key),
-                      word)
         try:
             # apply all shift keys
-            word = re.sub(r'{0}([\w\W])'.format(shift_key),
+            word = re.sub(r'{0}+([\w\W])'.format(shift_key),
                           shift_change, word)
             # apply all capslocks
             word = re.sub(r'{0}([\W\w]+?){0}'.format(caps_key),
@@ -258,6 +259,7 @@ class Keyboard(object):
         except Exception, e:
             print ">>>> I could not figure this out: {!r}, stuck at {!r}".format(keyseq, word)
             raise e
+        word = word.strip(shift_key).strip(caps_key)
         return word
 
 
@@ -279,7 +281,7 @@ def find_typo_type(word_o, word_t):
 
 if __name__ == '__main__':
     kb = Keyboard('US')
-    pw1 = 'PASSWORD123|'
+    pw1 = ' ord123'
     #    pw2 = 'PAasWOrd'
     p1 = kb.word_to_key_presses(pw1)
     # p1 = '<c>asdf<s>1<c>123'

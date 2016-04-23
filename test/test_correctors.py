@@ -3,7 +3,8 @@ from context import correctors
 from context import Checker, BUILT_IN_CHECKERS
 import random
 
-@pytest.mark.parametrize('w', ['word1', 'Rauhl', 'Nothing'])
+@pytest.mark.parametrize('w', ['word123', 'Rauhl123', 'Nothing', 
+                               'Password12', 'P@ssword12!'])
 class TestCorrectors(object):
     def test_length_delete_one_char(self, w):
         assert len(set(correctors.delete_one_char(w))) == len(w) or \
@@ -14,13 +15,26 @@ class TestCorrectors(object):
             assert w in correctors.delete_one_char(tw)
 
     def test_key_presses_edit(self, w):
-        w = 'Password12!'
         ball = set(correctors.edit_on_keypress_seq(w))
         for i in xrange(20):
             r = random.randint(1, len(w)-1)
             l = len(w)#r + random.randint(1, len(w)-r)
             w = w[:r] + w[r:l].upper() + w[l:]
             assert w in ball
+
+    def test_balls(self, w):
+        C = Checker(['keypress-edit'], policy_num=1)
+        ball = C.get_ball(w)
+        for rw in ball:
+            print "{!r} in nh({!r})".format(w, rw)
+            assert w in C.get_nh(rw)
+
+    def test_nh(self, w):
+        C = Checker(['keypress-edit'], policy_num=1)
+        nh = C.get_nh(w)
+        for tw in nh:
+            assert w in C.get_ball(tw)
+
 
 class TestEdits:
     @pytest.mark.skip(reason="The pwmodel does not support password sorting")
