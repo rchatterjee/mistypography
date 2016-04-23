@@ -3,8 +3,10 @@ from context import correctors
 from context import Checker, BUILT_IN_CHECKERS
 import random
 
-@pytest.mark.parametrize('w', ['word123', 'Rahul123', 'Nothing', 
-                               'Password12', 'P@ssword12!'])
+
+Chk = Checker(['keypress-edit'], policy_num=1)
+@pytest.mark.parametrize('w', [u'word123', u'Rahul123', u'Nothing', 
+                               u'Password12', u'P@ssword12!', 'woRD123'])
 class TestCorrectors(object):
     def test_length_delete_one_char(self, w):
         assert len(set(correctors.delete_one_char(w))) == len(w) or \
@@ -22,30 +24,38 @@ class TestCorrectors(object):
     #         w = w[:r] + w[r:l].upper() + w[l:]
     #         assert w in ball
 
+    def test_fast_modify_corr(self, w):
+        ball = correctors.fast_modify(w, apply_edits=['keypress-edit'])
+        assert all('\x04' not in rw and '\x03' not in rw for rw in ball)
+
+    def test_fast_modify_typo(self, w):
+        ball = correctors.fast_modify(w, typo=True, apply_edits=['keypress-edit'])
+        print w, '-->', ball
+        assert all(u'\x04' not in rw and u'\x03' not in rw
+                   for rw in ball)
+
+    @pytest.mark.skip()
     def test_nh_ball(self, w):
-        C = Checker(['keypress-edit'], policy_num=1)
-        nh = C.get_nh(w)
+        nh = Chk.get_nh(w)
         fail = 0
         for tw in nh:
-            if random.randint(0,20)==0:
+            if random.randint(0,40)==0:
                 continue
             print "{!r} in ball({!r})".format(w, tw)
-            if w not in C.get_ball(tw):
+            if w not in Chk.get_ball(tw):
                 fail += 1
         assert fail<len(nh)/10
 
     # def test_balls(self, w):
-    #     C = Checker(['keypress-edit'], policy_num=1)
-    #     ball = C.get_ball(w)
+    #     ball = Chk.get_ball(w)
     #     for rw in ball:
     #         print "{!r} in nh({!r})".format(w, rw)
-    #         assert w in C.get_nh(rw)
+    #         assert w in Chk.get_nh(rw)
 
     # def test_nh(self, w):
-    #     C = Checker(['keypress-edit'], policy_num=1)
-    #     nh = C.get_nh(w)
+    #     nh = Chk.get_nh(w)
     #     for tw in nh:
-    #         assert w in C.get_ball(tw)
+    #         assert w in Chk.get_ball(tw)
 
 
 class TestEdits:

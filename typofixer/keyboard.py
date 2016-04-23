@@ -241,24 +241,19 @@ class Keyboard(object):
 
         word = keyseq
         def caps_change(m):
-            return ''.join(self.change_shift(c)[0] 
-                           for c in m.group(1)
-                           if c != shift_key)
+            return ''.join(self.change_shift(c)[0] if c !=shift_key else shift_key
+                           for c in m.group(1))
 
         def shift_change(m):
-            return ''.join(self.add_shift(c)[0] 
-                           for c in m.group(1)
-                           if c != caps_key)
+            return ''.join(self.add_shift(c)[0] if c != caps_key else caps_key
+                           for c in m.group(1))
 
         word = re.sub(r'({0})+'.format(shift_key), r'\1', word)
         word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
-        # word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
+        # only swap <s><c> to <c><s>
         word = re.sub(r'({1}{0})+([a-zA-Z])'.format(caps_key, shift_key),
                       r'{0}{1}\2'.format(caps_key, shift_key), 
                       word)
-        # word = re.sub(r'({1}{0})+'.format(caps_key, shift_key),
-        #               '{0}{1}'.format(caps_key, shift_key),
-        #               word)
 
         if word.count(caps_key)%2 == 1:
             word += caps_key
@@ -268,7 +263,7 @@ class Keyboard(object):
             word = re.sub(r'{0}+([\w\W])'.format(shift_key),
                           shift_change, word)
             # apply all capslocks
-            word = re.sub(r'{0}([\W\w]+?){0}'.format(caps_key),
+            word = re.sub(r'{0}(.*?){0}'.format(caps_key),
                           caps_change, word)
         except Exception, e:
             print ">>>> I could not figure this out: {!r}, stuck at {!r}".format(keyseq, word)
@@ -295,16 +290,7 @@ def find_typo_type(word_o, word_t):
 
 if __name__ == '__main__':
     kb = Keyboard('US')
-    pw1 = 'P@sswRD12!'
-    pw1 = ' ord123'
-    #    pw2 = 'PAasWOrd'
-    p1 = kb.word_to_key_presses(pw1)
-    # p1 = '<c>asdf<s>1<c>123'
-    pw11 = kb.key_presses_to_word(p1)
-    #   p2 = word_to_key_presses(kb, pw2)
-    print "{!r} -> {!r} --> {!r}".format(pw1, p1, pw11)
-    #    print "{!r} -> {!r}".format(pw2, p2)
-
-
-    # print lv.distance(str(p1), str(p2))
-    # print lv.editops(str(p1), str(p2))
+    ks = '{s}wo{c}rd123{s}{c}'.format(c=CAPS_KEY, s=SHIFT_KEY)
+    # p1 = kb.word_to_key_presses(pw1)
+    # print "{!r} -> {!r} --> {!r}".format(pw1, p1, pw11)
+    print "{!r} -> {!r}".format(ks, kb.key_presses_to_word(ks))

@@ -64,7 +64,7 @@ class Checker(object):
 
     @memoized
     def get_ball(self, tpw):
-        ball = set(sorted(fast_modify(tpw, apply_edits=self.transform_list), 
+        ball = set(sorted(fast_modify(tpw, apply_edits=self.transform_list),
                       key=lambda pw: self.pwmodel.prob(pw), reverse=True)[:self.N])
         self._max_ball_size = max(len(ball), self._max_ball_size)
         return ball
@@ -82,6 +82,7 @@ class Checker(object):
         return self._max_nh_size
 
     def get_nh(self, rpw):
+        print '-->', repr(rpw), self.transform_list
         nh = filter(lambda tpw: rpw in self.get_ball(tpw),
                     fast_modify(rpw, self.transform_list,
                          typo=True, pw_filter=PW_FILTER))

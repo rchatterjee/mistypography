@@ -12,3 +12,4 @@ auto/
 .cache/
 .env
 pwmodel
+helper.py

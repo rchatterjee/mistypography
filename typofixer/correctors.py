@@ -376,13 +376,14 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
             print "WTF!! tpw ('{!r}') is of type = {}".format(tpw, type(tpw))
             raise ValueError
         mutated_words |= set(filter(pw_filter, tpw))
+    print "{word} -> {mutated_words}".format(word=word, mutated_words=mutated_words)
     return mutated_words
 
 
 
 if __name__ == "__main__":
-    w = ' rahul123'
-    ball = set(edit_on_keypress_seq(w))
+    w = 'woRD123'
+    ball = set(edit_on_keypress_seq_typo(w))
     print [w for w in ball if not w.startswith(' ')]
-    assert 'Rahul123' in ball
+    assert '\x04' not in ball
     print len(ball)
