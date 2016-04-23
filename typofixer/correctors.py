@@ -251,7 +251,7 @@ def edit_on_keypress_seq(word):
     return [
         KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
             for k in list(allowed_keys)
-            for i in xrange(len(keypress_w))
+            for i in xrange(len(keypress_w)+1)
     ] + [
         KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])\
         for k in list(allowed_keys) + ['']
@@ -354,9 +354,8 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
 
 
 if __name__ == "__main__":
-    w = 'Password12!'
+    w = 'wrahul1'
     ball = set(edit_on_keypress_seq(w))
-    print "Diff:>>>", set(["PASSWORD12!", "Password12!", "pASSWORD12!", "password12!", "Password12", 'PassWORD12!'])-ball
-    
-    print ball
+    print [w for w in ball if w.endswith('3')]
+    assert 'word123' in ball
     print len(ball)
