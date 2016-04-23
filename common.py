@@ -39,21 +39,22 @@ def dp(**kwargs):
 
 ## All allowed correctors
 ALLOWED_EDITS = [
-    'same',      # 1, 
-    'swc-all',   # 2
-    'swc-first', # 4
-    'rm-lastc',  # 3
-    'rm-firstc', # 10
+    # 'same',      # 1, 
+    #'swc-all',   # 2
+    #'swc-first', # 4
+    #'rm-lastc',  # 3
+    #'rm-firstc', # 10
     # 'rm-lasts',  # 3
     # 'cap2up',    # 5
     # 'upncap',  # 6
     # 'rm-lastd',  # 6
     # 'rm-lastl',  # 7
-    'sws-last1', # 8
+    #'sws-last1', # 8
     # 'sws-lastn', # 9
-    'add1-last', # 11
+    #'add1-last', # 11
     # 'up2cap',    # 12
     # 'n2s-last',  # 13
+    'key-edit'
 ]
 
 top2correctors = ALLOWED_EDITS[:3]

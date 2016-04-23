@@ -143,6 +143,27 @@ class Keyboard(object):
                         ret.append(ch)
         return ret
 
+    def keyboard_close_key(self, char):
+        """Returns the closed by characters of character @c in standard US
+        Keyboard.
+        :param c: character
+        :return: a list of keys
+        """
+        if char == SHIFT_KEY: 
+            return [CAPS_KEY]
+        elif char == CAPS_KEY:
+            return SHIFT_KEY
+
+        i, j, shift = self.loc(char)
+        ret = []
+        KM, num_shift = self._keyboard, self._num_shift
+        for r in range(i-1, i+2):
+            for c in range(j-1, j+2):
+                ch = self.loc2char(r*num_shift, c)
+                if ch and ch != ' ' and ch != char:
+                    ret.append(ch)
+        return ret
+
     def word_to_key_presses(self, word):
         """
         Converts a @word into a key press sequence for the keyboard KB.

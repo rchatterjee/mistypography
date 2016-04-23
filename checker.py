@@ -50,7 +50,7 @@ class Checker(object):
         self.setup_typo_probs()
 
     def setup_typo_probs(self):
-        tmp_d = {t: TYPO_FIX_PROB[t] for t in self.transform_list}
+        tmp_d = {t: TYPO_FIX_PROB.get(t, -1.0) for t in self.transform_list}
         total = float(sum(tmp_d.values()))
         self.transform_list_prob = {t: tmp_d[t]/total
                                        for t in self.transform_list}

@@ -230,7 +230,9 @@ def make_smart_corrections(word):
     (~200*len(word))
 
     """
-    return insert_one_char(word) + delete_one_char(word) + replace_keyboard_prox_chars(word)
+    return insert_one_char(word) \
+        + delete_one_char(word) \
+        + replace_keyboard_prox_chars(word)
     
 
 def edit_on_keypress_seq(word):
@@ -247,9 +249,14 @@ def edit_on_keypress_seq(word):
 
     keypress_w = KB.word_to_key_presses(word)
     allowed_keys = common.ALLOWED_KEYS # except capsloc
+    # Insertion and Deletion
     return [KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
             for i in xrange(len(keypress_w))
             for k in list(allowed_keys) + ['']
+    ] + \
+    [KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])
+            for i, key in enumerate(keypress_w)
+            for k in KB.keyboard_close_key(key)
     ]
 
 
@@ -275,7 +282,12 @@ EDITS_NAME_FUNC_MAP = {
     "upncap": [upper_n_capital, upper_n_capital],  # typed caps instead of shift switch
     "up2cap": [upper_2_capital, upper_2_capital],  # typed caps instead of shift switch
     "cap2up": [capital_2_upper, upper_2_capital],  # typed shift instead of caps switch
-    "n2s-last": [n2s_last, s2n_last] # convert last number to symbol
+    "n2s-last": [n2s_last, s2n_last], # convert last number to symbol
+    "ins-1": [insert_one_char, delete_one_char], # insert 1 char anywhere
+    "del-1": [delete_one_char, insert_one_char], # delete 1 char anywhere
+    "rep-1": [replace_one_char, replace_one_char], # replace any one char
+    "key-edit": [edit_on_keypress_seq, edit_on_keypress_seq], # edit on key-press sequence
+    "rep-1keyprox": [n2s_last, s2n_last] # replace keyboard-prox keys
 }
 
 
