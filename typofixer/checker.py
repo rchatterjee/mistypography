@@ -10,7 +10,7 @@ import heapq
 from common import (PW_FILTER, DATA_DIR_PATH, 
                     get_most_val_under_prob, TYPO_FIX_PROB,
                     top2correctors, top3correctors, top5correctors, home)
-
+from helper import memoized
 
 class Checker(object):
     """This is the Checker class which takes a @set_of_edits, and a
@@ -36,7 +36,9 @@ class Checker(object):
     #PWMODEL = PWModel(fname='rockyou1M.json.gz')
     # PWMODEL = HistModel(pwfilename='rockyou')
     PWMODEL = NGramPw(pwfilename='%s/passwords/rockyou-withcount.txt.bz2' % home, n=4)
-    def __init__(self, _transform_list, policy_num=1):
+
+
+    def __init__(self, _transform_list, policy_num=1, N=10):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
             self.transform_list = ['same'] + self.transform_list
@@ -50,8 +52,9 @@ class Checker(object):
         #     self.rpw_q = self.pwmodel.qth_pw(q)[1]
         self.rpw_q = -1.0
         self.setup_typo_probs()
-        self._max_nh_size = -1
-        self._max_ball_size = -1
+        self._max_nh_size = 0
+        self._max_ball_size = 0
+        self.N = N
 
     def setup_typo_probs(self):
         tmp_d = {t: TYPO_FIX_PROB.get(t, -1.0) for t in self.transform_list}
@@ -59,9 +62,11 @@ class Checker(object):
         self.transform_list_prob = {t: tmp_d[t]/total
                                        for t in self.transform_list}
 
+    @memoized
     def get_ball(self, tpw):
-        ball = self.check(tpw)
-        self._max_ball_size = len(ball)
+        ball = set(sorted(fast_modify(tpw, apply_edits=self.transform_list), 
+                      key=lambda pw: self.pwmodel.prob(pw), reverse=True)[:self.N])
+        self._max_ball_size = max(len(ball), self._max_ball_size)
         return ball
 
     def get_ball_union(self, tpwlist):
@@ -70,18 +75,17 @@ class Checker(object):
             B |= self.get_ball(tpw)
         return B
 
-    @property
     def max_ball_size(self):
         return self._max_ball_size
 
-    @property
     def max_nh_size(self):
         return self._max_nh_size
 
     def get_nh(self, rpw):
-        nh = fast_modify(rpw, self.transform_list,
-                         typo=True, pw_filter=PW_FILTER)
-        self._max_nh_size = len(nh)
+        nh = filter(lambda tpw: rpw in self.get_ball(tpw),
+                    fast_modify(rpw, self.transform_list,
+                         typo=True, pw_filter=PW_FILTER))
+        self._max_nh_size = max(len(nh), self._max_nh_size)
         return nh
 
     def set_approx_pwmodel(self, q):
