@@ -286,7 +286,6 @@ def edit_on_keypress_seq_corr(word):
                 yield KB.key_presses_to_word(keypress_w + k) # insert at the end
 
 
-
 def check_invalid_edits(edits):
     """Checks if any of the corrector in the edits array is invalid or not defined""" 
     assert all(e in ALLOWED_EDITS for e in edits), "Some edit is not in the list: {}".format(edits)

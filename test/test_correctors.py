@@ -34,6 +34,20 @@ class TestCorrectors(object):
                 fail += 1
         assert fail<len(nh)/10
 
+    # def test_balls(self, w):
+    #     C = Checker(['keypress-edit'], policy_num=1)
+    #     ball = C.get_ball(w)
+    #     for rw in ball:
+    #         print "{!r} in nh({!r})".format(w, rw)
+    #         assert w in C.get_nh(rw)
+
+    # def test_nh(self, w):
+    #     C = Checker(['keypress-edit'], policy_num=1)
+    #     nh = C.get_nh(w)
+    #     for tw in nh:
+    #         assert w in C.get_ball(tw)
+
+
 class TestEdits:
     @pytest.mark.skip(reason="The pwmodel does not support password sorting")
     def test_Checker(self):

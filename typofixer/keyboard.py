@@ -296,6 +296,7 @@ def find_typo_type(word_o, word_t):
 if __name__ == '__main__':
     kb = Keyboard('US')
     pw1 = 'P@sswRD12!'
+    pw1 = ' ord123'
     #    pw2 = 'PAasWOrd'
     p1 = kb.word_to_key_presses(pw1)
     # p1 = '<c>asdf<s>1<c>123'
