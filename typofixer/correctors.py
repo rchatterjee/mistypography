@@ -376,7 +376,7 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
             print "WTF!! tpw ('{!r}') is of type = {}".format(tpw, type(tpw))
             raise ValueError
         mutated_words |= set(filter(pw_filter, tpw))
-    print "{word} -> {mutated_words}".format(word=word, mutated_words=mutated_words)
+    # print "{word} -> {mutated_words}".format(word=word, mutated_words=mutated_words)
     return mutated_words
 
 

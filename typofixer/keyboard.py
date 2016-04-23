@@ -182,7 +182,6 @@ class Keyboard(object):
         caps_key = CAPS_KEY
         shift_key = SHIFT_KEY
         assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
-        shift_status = [0 for _ in word]
         new_str = ''
         # Add shift keys
         for i, ch in enumerate(word):
@@ -231,7 +230,37 @@ class Keyboard(object):
         """
         return keyseq.replace(SHIFT_KEY, '<s>').replace(CAPS_KEY, '<c>')
         
-    def key_presses_to_word(self, keyseq):
+    def key_presses_to_word(self, keysq):
+        """This is the same function as word_to_key_presses, just trying to
+        make it more efficient. Remeber the capslock and convert the
+        shift.
+
+        """
+        caps_key = CAPS_KEY
+        shift_key = SHIFT_KEY
+        assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
+        ret = ''
+        i = 0
+        caps = 0
+        shift = 0
+        while i<len(keysq):
+            a = keysq[i]
+            if keysq[i] == caps_key:
+                caps = (caps+1) % self._num_shift
+            elif keysq[i] == shift_key:
+                shift = 1
+            else:
+                if a.isalpha():
+                    a = self.add_shift(a)[0] if caps^shift == 1 else a
+                else:
+                    a = self.add_shift(a)[0] if shift else a
+                shift = 0
+                ret += a
+            i += 1
+        return ret
+
+
+    def key_presses_to_word_slow(self, keyseq):
         """
         Converts a keypress sequence to a word
         """

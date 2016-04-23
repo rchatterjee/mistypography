@@ -67,7 +67,7 @@ class Checker(object):
         ball = set(sorted(fast_modify(tpw, apply_edits=self.transform_list),
                       key=lambda pw: self.pwmodel.prob(pw), reverse=True)[:self.N])
         self._max_ball_size = max(len(ball), self._max_ball_size)
-        return ball
+        return ball-set([tpw])
 
     def get_ball_union(self, tpwlist):
         B = set()
@@ -81,11 +81,12 @@ class Checker(object):
     def max_nh_size(self):
         return self._max_nh_size
 
+    @memoized
     def get_nh(self, rpw):
-        print '-->', repr(rpw), self.transform_list
-        nh = filter(lambda tpw: rpw in self.get_ball(tpw),
-                    fast_modify(rpw, self.transform_list,
-                         typo=True, pw_filter=PW_FILTER))
+        nh = set(filter(lambda tpw: rpw in self.get_ball(tpw) and tpw != rpw,
+                        fast_modify(rpw, self.transform_list,
+                                    typo=True, pw_filter=PW_FILTER)))
+        # nh = fast_modify(rpw, self.transform_list, typo=True, pw_filter=PW_FILTER)
         self._max_nh_size = max(len(nh), self._max_nh_size)
         return nh
 
