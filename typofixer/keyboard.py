@@ -164,7 +164,11 @@ class Keyboard(object):
         new_str = ''
         # Add shift keys
         for i, ch in enumerate(word):
-            ch, shift = self.remove_shift(ch)
+            try:
+                ch, shift = self.remove_shift(ch)
+            except Exception, e:
+                print e,  repr(word)
+                raise e
             if shift:
                 new_str += shift_key + ch
             else:
@@ -208,9 +212,14 @@ class Keyboard(object):
             word += caps_key
 
         word = re.sub(r'({0})+'.format(shift_key), r'\1', word)
-        word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
+        word = re.sub(r'({0})+$'.format(shift_key), r'', word)
+        word = re.sub(r'({0}{0})+'.format(caps_key), r'\1', word)
+        # word = re.sub(r'({0})+'.format(caps_key), r'\1', word)
+        word = re.sub(r'({0}{1})+'.format(caps_key, shift_key),
+                      r'\1'.format(caps_key, shift_key),
+                      word)
         word = re.sub(r'({1}{0})+'.format(caps_key, shift_key),
-                      r'{0}{1}'.format(caps_key, shift_key),
+                      '{0}{1}'.format(caps_key, shift_key),
                       word)
         try:
             # apply all shift keys

@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(
-    name='typofix',
+    name='typofixer',
     version='1.0',
     description='A simple password typo correction procedure.',
     long_description="""This module tries to find possible methods to correct mistyped
@@ -36,8 +36,13 @@ setup(
     ],
 
     keywords="password typo correction",
-    packages=['typofix'], #find_packages(exclude(['contrib', 'docs', 'tests*'])),
-                           
-    install_requires=['pwmodel'],
+    packages=['typofixer'], #find_packages(exclude(['contrib', 'docs', 'tests*'])),
+    package_data = {'typofixer': ['data/*']},
+    install_requires=[
+        "pwmodels"
+    ],
+    dependecy_links=[
+        "git+ssh://git@github.com/rchatterjee/pwmodels.git"
+    ],
     # data_files=[('pwmodel/data/', ['ngram-0-phpbb.dawg', 'ngram-3-phpbb.dawg', 'ngram-4-phpbb.dawg'])]
 )

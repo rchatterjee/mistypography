@@ -80,8 +80,10 @@ TYPO_FIX_PROB = {
     "kclose": 1385,
     "other": 1918,
     "tcerror": 18,
-    "rm-lastc": 191
+    "rm-lastc": 191,
+    "keypress-edit":1000
 }
+
 
 
 

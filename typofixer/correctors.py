@@ -246,7 +246,7 @@ def edit_on_keypress_seq(word):
 
     keypress_w = KB.word_to_key_presses(word)
     allowed_keys = common.ALLOWED_KEYS
-    return set([
+    return [
         KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:])
             for k in list(allowed_keys)
             for i in xrange(len(keypress_w))
@@ -254,7 +254,7 @@ def edit_on_keypress_seq(word):
         KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])\
         for k in list(allowed_keys) + ['']
         for i in xrange(len(keypress_w))
-    ])
+    ]
 
 
 def check_invalid_edits(edits):

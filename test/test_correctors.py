@@ -23,6 +23,7 @@ class TestCorrectors(object):
             assert w in ball
 
 class TestEdits:
+    @pytest.mark.skip(reason="The pwmodel does not support password sorting")
     def test_Checker(self):
         # policy1 - accepts all
         aserver = Checker([], 1)
@@ -67,6 +68,7 @@ class TestEdits:
             assert res==aserver.check(pw)
 
 
+    @pytest.mark.skip(reason="The pwmodel does not support password sorting")
     def test_builtin_checkers(self):
         checker = BUILT_IN_CHECKERS['ChkAllTop5']
         for pw,res in (zip(['password1', '1234567', '#df46gd!@`'], 
