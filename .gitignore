@@ -10,3 +10,5 @@
 auto/
 .idea/
 .cache/
+.env
+pwmodel
