@@ -34,17 +34,16 @@ class TestCorrectors(object):
         assert all(u'\x04' not in rw and u'\x03' not in rw
                    for rw in ball)
 
-    @pytest.mark.skip()
     def test_nh_ball(self, w):
         nh = Chk.get_nh(w)
         fail = 0
         for tw in nh:
-            if random.randint(0,40)==0:
+            if random.randint(0,20)==0:
                 continue
             print "{!r} in ball({!r})".format(w, tw)
             if w not in Chk.get_ball(tw):
                 fail += 1
-        assert fail<len(nh)/10
+        assert fail<(len(nh)/10)
 
     # def test_balls(self, w):
     #     ball = Chk.get_ball(w)

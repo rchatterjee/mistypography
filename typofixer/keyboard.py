@@ -1,6 +1,6 @@
 import Levenshtein as lv
 import re
-from common import SHIFT_KEY, CAPS_KEY
+from common import SHIFT_KEY, CAPS_KEY, ALLOWED_KEYS
 
 KEYBOARD_TYPE = 'US'
 layout_matrix = {
@@ -153,9 +153,9 @@ class Keyboard(object):
         :return: a list of keys
         """
         if char == SHIFT_KEY: 
-            return [CAPS_KEY]
+            return CAPS_KEY
         elif char == CAPS_KEY:
-            return [SHIFT_KEY]
+            return SHIFT_KEY
 
         i, j, shift = self.loc(char)
         ret = []
@@ -165,7 +165,7 @@ class Keyboard(object):
                 ch = self.loc2char(r*num_shift, c)
                 if ch and ch != ' ':
                     ret.append(ch)
-        return ret
+        return ''.join(ret)
 
     def word_to_key_presses(self, word):
         """
@@ -229,35 +229,151 @@ class Keyboard(object):
         """print the @key_str as the human readable format.
         """
         return keyseq.replace(SHIFT_KEY, '<s>').replace(CAPS_KEY, '<c>')
+
+    def part_key_press_string(self, keyseq, shift=False, caps=False):
+        """
+        returns the word for a part of the keyseq, and returns (word, shift, caps)
+        """
+        assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
+        ret = ''
+        i = 0
+        while i<len(keyseq):
+            a = keyseq[i]
+            if keyseq[i] == CAPS_KEY:
+                caps = caps^True
+            elif keyseq[i] == SHIFT_KEY:
+                shift = True
+            else:
+                if a.isalpha():
+                    a = self.add_shift(a)[0] if caps^shift else a
+                else:
+                    a = self.add_shift(a)[0] if shift else a
+                shift = False
+                ret += a
+            i += 1
+        return ret, shift, caps
         
-    def key_presses_to_word(self, keysq):
+    def apply_shift_caps(self, c, shift, caps):
+        if c.isalpha():
+            return self.add_shift(c)[0] if shift^caps else c
+        else:
+            return self.add_shift(c)[0] if shift else c
+
+    def sub_word_table(self, keyseq):
+        """n = len(word), returns an 2-D array,
+        TT = shift-caps, both true, TF, FT and FF are similar
+        i/j  0     1      2     3       4 
+        0  [:0] [0:]FF [:0]FT  [:0]TF  [:0]TT
+        1  [:1] [1:]FF [:1]FT  [:1]TF  [:1]TT
+        .
+        .
+        n  [:n] [n:]FF [:n]FT  [:n]TF  [:n]TT
+
+        """
+        n = len(keyseq)
+        A = [[(), (), (), (), ()] for i in xrange(n+1)]
+        A[0] = [('', False, False),
+                self.part_key_press_string(keyseq, False, False),# FF
+                self.part_key_press_string(keyseq, False, True), # FT
+                self.part_key_press_string(keyseq, True, False), # TF
+                self.part_key_press_string(keyseq, True, True)]  # TT
+        A[n] = [A[0][1], ('', False, False), ('', False, True), ('', True, False), ('', True, True)]
+        for j in xrange(1, n):
+            last_row = A[j-1]
+            row = A[j]
+            c = keyseq[j-1]
+            nc = keyseq[j] if j<n else ''
+            shifted_nc = self.add_shift(nc)[0] if nc not in [SHIFT_KEY, CAPS_KEY] else ''
+            if c==SHIFT_KEY:
+                row[0] = (last_row[0][0], True, last_row[0][2]) # case 0: only pre
+                row[1] = (nc + last_row[1][0][1:], last_row[1][1], last_row[1][2]) # shift-caps = FF, remove the shift from next char
+                row[2] = ((shifted_nc if nc.isalpha() else nc) + last_row[2][0][1:], last_row[2][1], last_row[2][2]) # shift-caps = FT
+                row[3] = last_row[3] # shift-caps = TF
+                row[4] = last_row[4] # shift-caps = TT
+            elif c == CAPS_KEY:
+                row[0] = (last_row[0][0], last_row[0][1], last_row[0][2]^True) # case 0: only pre
+                row[1] = (last_row[1][0].swapcase(), last_row[1][1], last_row[1][2]^True) # shift-caps = FF
+                row[2] = last_row[1]  # shift-caps = FT
+                row[3] = (last_row[3][0].swapcase(), last_row[3][1], last_row[3][2]^True) # shift-caps = TF
+                row[4] = last_row[3] # shift-caps = TT
+            else:
+                row[0] = (last_row[0][0] + self.apply_shift_caps(c, *last_row[0][1:]), False, last_row[0][2])
+                row[1] = (last_row[1][0][1:], last_row[1][1], last_row[1][2]) # shift-caps = FF
+                row[2] = (last_row[2][0][1:], last_row[2][1], last_row[2][2]) # shift-caps = FT
+                row[3] = (shifted_nc + last_row[3][0][2:] if shifted_nc else last_row[3][0][1:],
+                          last_row[3][1], last_row[3][2]) # shift-caps = TF
+                row[4] = (nc + last_row[4][0][2:] if nc.isalpha() else
+                          shifted_nc + last_row[4][0][2:],
+                          last_row[4][1], last_row[4][2]) # shift-caps = TT
+        return A
+
+    def key_press_insert_edits(self, keyseq, insert_keys=[], replace_keys=[]):
+        """It will insert/replace/delete one key at a time from the
+        keyseq. And return a set of words. Which keys to insert is
+        specified by the @insert_keys parameter. 
+        :param pos: int, position of the edit, pos=0..len(keyseq): insert,delete and replace.
+                    if pos=len(keyseq)+1, then only insert
+        """
+        spcl_keys = SHIFT_KEY+CAPS_KEY
+        sub_words = self.sub_word_table(keyseq)
+        # print '\n'.join(str(r) for r in sub_words)
+        smart = not insert_keys and not replace_keys
+        for i,c in enumerate(keyseq):
+            if smart:
+                if c in spcl_keys: # if replacing a caps or shift, replace with everything
+                    replace_keys = ALLOWED_KEYS
+                else: # else use only the closed by keys or spcl keys
+                    replace_keys = self.keyboard_prox_key(c) + spcl_keys
+                # Use all keys if the inserting at the edge, else
+                # replace with closed by keys of the preivious key
+                keys_i = set(replace_keys + \
+                             (self.keyboard_prox_key(keyseq[i-1]) \
+                              if i>0 else ALLOWED_KEYS))
+
+            pre_w, shift, caps  = sub_words[i][0]
+            t = 2*shift + caps + 1
+            # print "Going to Insert at {}".format(i) 
+            # insert
+            for k in insert_keys:
+                if k==SHIFT_KEY:
+                    yield pre_w + sub_words[i][3+caps][0]
+                elif k==CAPS_KEY:
+                    yield pre_w + sub_words[i][2*shift+2][0]
+                else:
+                    yield pre_w + self.apply_shift_caps(k, shift, caps) + sub_words[i][caps+1][0]
+            # print "Going to delete"
+            # delete
+            if c==SHIFT_KEY:
+                yield pre_w + sub_words[i+1][1+caps][0]
+            elif c==CAPS_KEY:
+                yield pre_w + sub_words[i+1][2*shift+2][0]
+            else:
+                yield pre_w + sub_words[i+1][t][0]
+            # replace
+            # print "Going to Replace @ {}".format(i)
+            for k in replace_keys:
+                if k==SHIFT_KEY:
+                    yield pre_w + sub_words[i+1][3+caps][0]
+                elif k==CAPS_KEY:
+                    yield pre_w + sub_words[i+1][2*shift + 2 - caps][0] # If already caps, then this will cancel that
+                else:
+                    yield pre_w + self.apply_shift_caps(k, shift, caps) + sub_words[i+1][1+caps][0]
+
+        # For inserting at the endn
+        pre_w, shift, caps = sub_words[-1][0]
+        if smart:
+            insert_keys = ALLOWED_KEYS
+        for k in insert_keys:
+            if k not in spcl_keys:
+                yield pre_w + self.apply_shift_caps(k, shift, caps)
+
+    def key_presses_to_word(self, keyseq):
         """This is the same function as word_to_key_presses, just trying to
         make it more efficient. Remeber the capslock and convert the
         shift.
 
         """
-        caps_key = CAPS_KEY
-        shift_key = SHIFT_KEY
-        assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
-        ret = ''
-        i = 0
-        caps = 0
-        shift = 0
-        while i<len(keysq):
-            a = keysq[i]
-            if keysq[i] == caps_key:
-                caps = (caps+1) % self._num_shift
-            elif keysq[i] == shift_key:
-                shift = 1
-            else:
-                if a.isalpha():
-                    a = self.add_shift(a)[0] if caps^shift == 1 else a
-                else:
-                    a = self.add_shift(a)[0] if shift else a
-                shift = 0
-                ret += a
-            i += 1
-        return ret
+        return self.part_key_press_string(keyseq)[0]
 
 
     def key_presses_to_word_slow(self, keyseq):
@@ -299,6 +415,7 @@ class Keyboard(object):
             raise e
         word = word.strip(shift_key).strip(caps_key)
         return word
+
 
 
 def find_typo_type(word_o, word_t):

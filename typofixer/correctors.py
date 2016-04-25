@@ -250,40 +250,42 @@ def edit_on_keypress_seq_typo(word):
     keypress_w = KB.word_to_key_presses(word)
     allowed_keys = list(common.ALLOWED_KEYS)
     spcl_keys = [common.SHIFT_KEY, common.CAPS_KEY]
-    for i, c in enumerate(keypress_w):
-        if c in spcl_keys:
-            keys_r = allowed_keys
-        else:
-            keys_r = KB.keyboard_prox_key(c) + spcl_keys
-        keys_i = set(keys_r + \
-                     (KB.keyboard_prox_key(keypress_w[i-1]) \
-                      if i>0 else allowed_keys))
+    return KB.key_press_insert_edits(keypress_w)
 
-        for k in keys_i: # insert
-            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
-        for k in keys_r: # replace
-            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])
+    # for i, c in enumerate(keypress_w):
+    #     if c in spcl_keys:
+    #         keys_r = allowed_keys
+    #     else:
+    #         keys_r = KB.keyboard_prox_key(c) + spcl_keys
+    #     keys_i = set(keys_r + \
+    #                  (KB.keyboard_prox_key(keypress_w[i-1]) \
+    #                   if i>0 else allowed_keys))
+    #     for k in keys_i: # insert
+    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
+    #     for k in keys_r: # replace
+    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])
 
-        yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delet
+    #     yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delet
 
-        if i == len(keypress_w)-1:
-            for k in allowed_keys:
-                yield KB.key_presses_to_word(keypress_w + k) # insert at the end
+    #     if i == len(keypress_w)-1:
+    #         for k in allowed_keys:
+    #             yield KB.key_presses_to_word(keypress_w + k) # insert at the end
 
 def edit_on_keypress_seq_corr(word):
     """
     #### this is the BALL of the @word ###
     """
     keypress_w = KB.word_to_key_presses(word)
-    allowed_keys = list(common.ALLOWED_KEYS)
-    for i, c in enumerate(keypress_w):
-        for k in allowed_keys:
-            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
-            yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:]) # replace
-        yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delete
-        if i == len(keypress_w)-1:  # insert at the end
-            for k in allowed_keys[:-2]:
-                yield KB.key_presses_to_word(keypress_w + k) # insert at the end
+    return KB.key_press_insert_edits(keypress_w, common.ALLOWED_KEYS, common.ALLOWED_KEYS)
+    # for i, c in enumerate(keypress_w):
+        
+    #     for k in allowed_keys:
+    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
+    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:]) # replace
+    #     yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delete
+    #     if i == len(keypress_w)-1:  # insert at the end
+    #         for k in allowed_keys[:-2]:
+    #             yield KB.key_presses_to_word(keypress_w + k) # insert at the end
 
 
 def check_invalid_edits(edits):

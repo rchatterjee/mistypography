@@ -54,8 +54,13 @@ class TestKeyboard():
             assert w == res
 
 
+key = {'c': CAPS_KEY,
+       's': SHIFT_KEY}
+
+
 @pytest.mark.parametrize(('inp', 'res'),
-                         [('PAasWOrd', u'{s}p{s}aas{s}w{s}ord'),
+                         [('Pa', u'{s}pa'),
+                          ('PAasWOrd', u'{s}p{s}aas{s}w{s}ord'),
                           ('password', u'password'),
                           ('Password', u'{s}password'),
                           ('P@ssword12', u'{s}p{s}2ssword12'),
@@ -93,9 +98,37 @@ class TestKeyPresses():
         kb = Keyboard('US')
         for q, r in inp_res_map:
             assert kb.loc(*q) == r
+    
+    def test_part_key_presses(self, inp, res):
+        res = res.format(**key)
+        kb = Keyboard('US')
+        i = random.randint(0, len(res))
+        pre_word, shift, caps = kb.part_key_press_string(res[:i])
+        post_word, shift, caps = kb.part_key_press_string(res[i:], shift, caps)
+        assert inp == pre_word + post_word
 
+    def test_sub_word_table(self, inp, res):
+        kb = Keyboard('US')
+        res = res.format(**key)
+        A = kb.sub_word_table(res)
+        print '\n'.join(str(x) for x in A)
+        for i in xrange(len(res)):
+            pre_w, shift, caps = A[i][0]
+            post_w = A[i][2*shift + caps + 1][0]
+            assert pre_w + post_w == inp
 
-
+    def test_key_press_insert_edits(self, inp, res):
+        inp_res_map = [(('{s}pa'.format(**key), [CAPS_KEY, SHIFT_KEY, 'a'], [CAPS_KEY, 't']),
+                        ('pA', 'Pa', 'aPa', 'pa', 'PA', 'tpa', # j=0
+                         'pA', 'Pa', 'Apa', 'A', 'a', 'Ta',   # j=1
+                         'PA', 'PA', 'Paa', 'P', 'P', 'Pt',   # j=2
+                         'Paa'))
+        ]
+        kb = Keyboard('US')
+        for inp, res in inp_res_map:
+            for i,r in enumerate(kb.key_press_insert_edits(*inp)):
+                print i,r,res[i]
+                assert r == res[i]
 
 # class TestPWLogging:
 #     def test_logging(self):
