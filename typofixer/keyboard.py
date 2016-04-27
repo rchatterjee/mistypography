@@ -341,6 +341,8 @@ class Keyboard(object):
                     yield pre_w + sub_words[i][2*shift+2][0]
                 else:
                     yield pre_w + self.apply_shift_caps(k, shift, caps) + sub_words[i][caps+1][0]
+                    if i==0:
+                        yield self.apply_shift_caps(k, True, caps) + sub_words[i][1][0]
             # print "Going to delete"
             # delete
             if c==SHIFT_KEY:
@@ -359,13 +361,14 @@ class Keyboard(object):
                 else:
                     yield pre_w + self.apply_shift_caps(k, shift, caps) + sub_words[i+1][1+caps][0]
 
-        # For inserting at the endn
+        # For inserting at the end
         pre_w, shift, caps = sub_words[-1][0]
         if smart:
             insert_keys = ALLOWED_KEYS
         for k in insert_keys:
             if k not in spcl_keys:
-                yield pre_w + self.apply_shift_caps(k, shift, caps)
+                yield pre_w + self.apply_shift_caps(k, False, caps)
+                yield pre_w + self.apply_shift_caps(k, True, caps)
 
     def key_presses_to_word(self, keyseq):
         """This is the same function as word_to_key_presses, just trying to

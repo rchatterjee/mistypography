@@ -10,7 +10,8 @@ import heapq
 from common import (PW_FILTER, DATA_DIR_PATH, 
                     get_most_val_under_prob, TYPO_FIX_PROB,
                     top2correctors, top3correctors, top5correctors, home)
-from helper import memoized
+from helper import memoized, random
+from heap import priority_dict
 
 class Checker(object):
     """This is the Checker class which takes a @set_of_edits, and a
@@ -26,6 +27,7 @@ class Checker(object):
     policy5: ChkAOp, Approximate optimal checker, optimally choose the set of password that
              maximizes the utility keeping the total ball weight under Pr(rpw_q)
 
+    policy6: use the pwmodel to find topk passwords from the list of corrections
     The utility of the edits are hardcoded in common.py
     """
     transform_list = []
@@ -38,13 +40,15 @@ class Checker(object):
     PWMODEL = NGramPw(pwfilename='%s/passwords/rockyou-withcount.txt.bz2' % home, n=4)
 
 
-    def __init__(self, _transform_list, policy_num=1, N=10):
+    def __init__(self, _transform_list, policy_num=1, N=10, **kwargs):
         self.transform_list = _transform_list
         if 'same' not in self.transform_list:
             self.transform_list = ['same'] + self.transform_list
         self.policy_num = policy_num
         self.check = eval("self.policy%d" % policy_num)
         self.pwmodel = self.PWMODEL
+
+        self._topk = kwargs.get('topk', 10)
 
         q = 1000  # Fix the q
         self._q = q
@@ -64,17 +68,20 @@ class Checker(object):
 
     @memoized
     def get_ball(self, tpw):
-        ball = fast_modify(tpw, apply_edits=self.transform_list)
+        """
+        Remember ball does not include the input password, but ball_union does.
+        """
+        ball = fast_modify(tpw, apply_edits=self.transform_list) - set([tpw])
         # ball = set(sorted(fast_modify(tpw, apply_edits=self.transform_list),
         #               key=lambda pw: self.pwmodel.prob(pw), reverse=True)[:self.N])
         self._max_ball_size = max(len(ball), self._max_ball_size)
-        return ball-set([tpw])
+        return ball
 
     def get_ball_union(self, tpwlist):
         B = set()
         for tpw in tpwlist:
             B |= self.get_ball(tpw)
-        return B
+        return B|set(tpwlist)
 
     def max_ball_size(self):
         return self._max_ball_size
@@ -83,10 +90,13 @@ class Checker(object):
         return self._max_nh_size
 
     def get_nh(self, rpw):
+        """
+        Neighborhood does not include the input password.
+        """
         # nh = set(filter(lambda tpw: rpw in self.get_ball(tpw) and tpw != rpw,
         #                 fast_modify(rpw, self.transform_list,
         #                             typo=True, pw_filter=PW_FILTER)))
-        nh = fast_modify(rpw, self.transform_list, typo=True, pw_filter=PW_FILTER)
+        nh = fast_modify(rpw, self.transform_list, typo=True, pw_filter=PW_FILTER)-set([rpw])
         self._max_nh_size = max(len(nh), self._max_nh_size)
         return nh
 
@@ -112,12 +122,13 @@ class Checker(object):
         """This policy is just breat the ball around tpw using given the
         transforms and checks whether or not rpw in that ball, also called ChkAll
         """
-        B = fast_modify(tpw, apply_edits=self.transform_list)
+        B = self.get_ball(tpw)|set([rpw])
         if rpw:
             return rpw in B
         else: 
             return B
     
+    @memoized
     def policy2(self, tpw, rpw=None):
         """
         Dont allow any password within the blacklisted set of passwords, a.k.a, ChkBl
@@ -174,16 +185,7 @@ class Checker(object):
             return rpw in B
         else:
             return B
-
-    def topq_sorted_by_pwmodel(self, tpw, rpw=None):
-        """
-        applies keypress eidts, sorts the ball by pwmodel, and outputs top q
-        """
-        q = 5
-        return heapq.nlargest(q, EDITS_NAME_FUNC_MAP['keypress-edit'][0](tpw),
-                              key=lambda rpw: self.pwmodel.prob(rpw))
-
-
+    
     def policy5(self, tpw, rpw=None):
         """
         Same as policy 4, but approximate info about pwmodel, ChkAOp
@@ -207,6 +209,26 @@ class Checker(object):
             return rpw in B
         else:
             return B
+        
+    def policy6(self, tpw, rpw=None):
+        """
+        Applies the edits and then choose self._topk from it based on self.pwmodel
+        """
+        k = self._topk
+        # pwheap = priority_dict({
+        #     rrpw: -self.pwmodel.prob(rrpw)
+        #     for rrpw in fast_modify(tpw, apply_edits=self.transform_list)
+        # })
+        B = fast_modify(tpw, apply_edits=self.transform_list)
+        if k<len(B):
+            B = list(B)
+            B = set(B[i] for i in random.randints(0, len(B), n=k))
+
+        if rpw:
+            return rpw in set(B)
+        else:
+            return set(B)
+        
 
 ################################################################################
 # Different preimplemented checkers
@@ -232,7 +254,12 @@ BUILT_IN_CHECKERS = {
     "ChkAll_swcfirst": Checker(['swc-first'], 1),
     "ChkAll_rmlastc": Checker(['rm-lastc'], 1),
     "ChkAll_rmfirstc": Checker(['rm-firstc'], 1),
-    "ChkAll_swslast": Checker(['sws-last1'], 1)
+    "ChkAll_swslast": Checker(['sws-last1'], 1),
+
+    # Edit based checkers
+    "ChkBl_keyedit": Checker(['keypress-edit'], 2),
+    "ChkAll_keyedit": Checker(['keypress-edit'], 1),
+    "ChkSelect_keyedit": Checker(['keypress-edit'], 6, topk=10),
 }
 
 if __name__ == '__main__':
