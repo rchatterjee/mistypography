@@ -39,10 +39,11 @@ setup(
     packages=['typofixer'], #find_packages(exclude(['contrib', 'docs', 'tests*'])),
     package_data = {'typofixer': ['data/*']},
     install_requires=[
-        "pwmodels"
+        "pwmodels",
+        "python-levenshtein"
     ],
-    dependecy_links=[
-        "git+ssh://git@github.com/rchatterjee/pwmodels.git"
+    dependency_links=[
+        "git+https://github.com/rchatterjee/pwmodels.git"
     ],
     # data_files=[('pwmodel/data/', ['ngram-0-phpbb.dawg', 'ngram-3-phpbb.dawg', 'ngram-4-phpbb.dawg'])]
 )

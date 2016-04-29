@@ -6,12 +6,12 @@ import unittest, string
 from collections import defaultdict
 from correctors import fast_modify, EDITS_NAME_FUNC_MAP
 from pwmodel import HistPw, NGramPw
-import heapq
+# import heapq
 from common import (PW_FILTER, DATA_DIR_PATH, 
                     get_most_val_under_prob, TYPO_FIX_PROB,
                     top2correctors, top3correctors, top5correctors, home)
 from helper import memoized, random
-from heap import priority_dict
+# from heap import priority_dict
 
 class Checker(object):
     """This is the Checker class which takes a @set_of_edits, and a

@@ -13,3 +13,4 @@ auto/
 .env
 pwmodel
 helper.py
+build/
