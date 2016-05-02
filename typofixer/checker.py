@@ -10,7 +10,7 @@ from pwmodel import HistPw, NGramPw
 from common import (PW_FILTER, DATA_DIR_PATH, 
                     get_most_val_under_prob, TYPO_FIX_PROB,
                     top2correctors, top3correctors, top5correctors, home)
-from helper import memoized, random
+from pwmodel.helper import memoized, random
 # from heap import priority_dict
 
 class Checker(object):
@@ -122,7 +122,7 @@ class Checker(object):
         """This policy is just breat the ball around tpw using given the
         transforms and checks whether or not rpw in that ball, also called ChkAll
         """
-        B = self.get_ball(tpw)|set([rpw])
+        B = self.get_ball(tpw)|set([tpw])
         if rpw:
             return rpw in B
         else: 
@@ -265,4 +265,4 @@ BUILT_IN_CHECKERS = {
 if __name__ == '__main__':
     chk = Checker(top2correctors, 1)
     print "{} -> {}".format(sys.argv[1], 
-                                   chk.topq_sorted_by_pwmodel(sys.argv[1]))
+                            chk.topq_sorted_by_pwmodel(sys.argv[1]))

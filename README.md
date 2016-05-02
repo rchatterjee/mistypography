@@ -3,50 +3,63 @@ This module implements different typo correction strategies discussed
 in https://www.cs.cornell.edu/~rahul/papers/pwtypos.pdf.
 
 ## REQUIREMENTS
+* Install `pwmodel` from [https://github.com/rchatterjee/pwmodels.git](here)
+  ```bash
+   $ pip isntall git+https://github.com/rchatterjee/pwmodels.git
+   ```
+   This should install all the dependencies, if not, you may have to
+   install `python-Levenshtein`.
 
-This is a purely python based project with no dependency other than
-standard python 2.7 impelementation.
-
-
-
+## INSTALL
+  ```bash
+  $ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/mistypography.git
+  ```
 ## HOW TO USE?  
 
-Basically one would like to create the ball of correction given a
-entered password. The simplest way to do this is instantiate a Checker
-class with required arguments. The checker class already has a set of
-checker implemented, e.g., ChkAll, ChkBl, ChkAOp (description of these
-checker is given in the checker.py file).  To instanticate Checker we
-need two arguments, first, a set of correctors which you can see the
-names given in common.py, and second, a policy number which will tune
-the checker to use one of the given policies (ChkAll, ChkBl etc.).
+To allow online typo correction, a set of corrected version of the
+mistyped password is created, and then each of them is tested against
+the real password hash. This code only generates the possible set of
+corrections (a.k.a. ball).  The simplest way to do this is to use one
+of the built-in checkers (`BUILT_IN_CHECKERS`) in
+`typofixer/checker.py` file. Descriptions of these checkers is given
+in the `checker.py` file. 
+ 
+ You can also instantiate your own `Checker`. To instanticate a
+ checker we need two arguments, first, a set of correctors which you
+ can see the names given in common.py, and second, a policy number
+ which will tune the checker to use one of the given policies (ChkAll,
+ ChkBl etc.).
 
-Note, the checker needs the data directory to be in the same
-folder. You can move the 'data' directory but then you have set the path
-in common.py for DATA_DIR_PATH.
+Note, the checker needs the `data` directory to be in the same
+folder. You can move the `data` directory and change path
+`DATA_DIR_PATH` in `common.py` accordingly.
 
 ```bash
-[rahul @ code/dropbox] [master]$ python
+$ python
 Python 2.7.6 (default, Jun 22 2015, 17:58:13) 
 [GCC 4.8.2] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
->>> from common import top3correctors, top5correctors
+>>> from typofixer.checker import BUILT_IN_CHECKERS
 
->>> from checker import Checker
-data/rockyou1M.json.gz
+>>> chk = BUILT_IN_CHECKERS['ChkAllTop3']
 
->>> chk = Checker(top3correctors, 5)
+>>> chk = BUILT_IN_CHECKERS['ChkAllTop3'] 
 
->>> chk.get_ball('password1')
-set(['password1'])
+>>> chk.check('password')
+set(['passwor', 'Password', 'PASSWORD', 'password'])
 
->>> chk.get_ball('password123')
-set(['PASSWORD123', 'Password123', 'password123'])
+>>> chk_bl = BUILT_IN_CHECKERS['ChkBlTop3']
 
->>> chk = Checker(top5correctors, 1)
+>>> chk_bl.check('password')
+set(['passwor', 'password'])
 
->>> chk.get_ball('password123')
-set(['password12', 'password12#', 'PASSWORD123', 'Password123', 'assword123', 'password123'])
+>>> >>> chk_all = BUILT_IN_CHECKERS['ChkAllTop5']
+
+>>> chk_all.check('password1')
+set(['assword1', 'PASSWORD1', 'Password1', 'password!', 'password', 'password1'])
+
 ```
+
 
 
 ### CONTACT

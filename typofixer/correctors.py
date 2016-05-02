@@ -357,7 +357,7 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
     #     print "I am modifying a password ('{}') which does not pass its own filter ({})"\
     #     .format(word, pw_filter)
     if not pw_filter:
-        pw_filter = lambda x: len(x)>=6
+        pw_filter = lambda x: x and len(x)>=6
 
     if 'All' in apply_edits:
         apply_edits = ALLOWED_EDITS

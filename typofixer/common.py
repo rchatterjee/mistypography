@@ -58,9 +58,11 @@ ALLOWED_EDITS = [
     'keypress-edit', # 14
 ]
 
-top2correctors = ALLOWED_EDITS[:3]
-top3correctors = ALLOWED_EDITS[:4]
-top5correctors = ALLOWED_EDITS[:6]
+top2correctors = ['same', 'swc-all', 'swc-first']
+top3correctors = ['same', 'swc-all', 'swc-first', 'rm-lastc']
+top5correctors = ['same', 'swc-all', 'swc-first', 'rm-lastc',
+                  'rm-firstc', 'n2s-last']
+
 home= os.path.expanduser('~')
 
 ## Number of passwords fixed by each correctors

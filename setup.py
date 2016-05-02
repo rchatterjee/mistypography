@@ -39,7 +39,7 @@ setup(
     packages=['typofixer'], #find_packages(exclude(['contrib', 'docs', 'tests*'])),
     package_data = {'typofixer': ['data/*']},
     install_requires=[
-        "pwmodels",
+        "pwmodel",
         "python-levenshtein"
     ],
     dependency_links=[
