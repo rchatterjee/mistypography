@@ -4,16 +4,20 @@ in https://www.cs.cornell.edu/~rahul/papers/pwtypos.pdf.
 
 ## REQUIREMENTS
 * Install `pwmodel` from [https://github.com/rchatterjee/pwmodels.git](here)
-  ```bash
-   $ pip isntall git+https://github.com/rchatterjee/pwmodels.git
-   ```
+```bash
+$ pip isntall git+https://github.com/rchatterjee/pwmodels.git
+```
    This should install all the dependencies, if not, you may have to
    install `python-Levenshtein`.
+```bash
+$ pip install python-Levenshtein
+```
 
 ## INSTALL
-  ```bash
-  $ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/mistypography.git
-  ```
+```bash
+$ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/mistypography.git
+```
+
 ## HOW TO USE?  
 
 To allow online typo correction, a set of corrected version of the
