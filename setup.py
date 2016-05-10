@@ -30,19 +30,18 @@ setup(
         
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
     ],
 
     keywords="password typo correction",
     packages=['typofixer'], #find_packages(exclude(['contrib', 'docs', 'tests*'])),
     package_data = {'typofixer': ['data/*']},
     install_requires=[
-        "pwmodel",
         "python-levenshtein"
+        # "pwmodel==1.0",
     ],
     dependency_links=[
+#        "https://github.com/rchatterjee/pwmodels/master#egg=pwmodel-1.0"
         "git+https://github.com/rchatterjee/pwmodels.git"
     ],
     # data_files=[('pwmodel/data/', ['ngram-0-phpbb.dawg', 'ngram-3-phpbb.dawg', 'ngram-4-phpbb.dawg'])]
