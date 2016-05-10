@@ -3,7 +3,7 @@ This module implements different typo correction strategies discussed
 in https://www.cs.cornell.edu/~rahul/papers/pwtypos.pdf.
 
 ## REQUIREMENTS
-* Install `pwmodel` from [https://github.com/rchatterjee/pwmodels.git](here)
+* Install `pwmodel` from [here](https://github.com/rchatterjee/pwmodels.git)
 ```bash
 $ pip isntall git+https://github.com/rchatterjee/pwmodels.git
 ```
