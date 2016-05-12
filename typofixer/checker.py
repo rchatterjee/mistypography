@@ -235,19 +235,19 @@ class Checker(object):
 ################################################################################ 
 BUILT_IN_CHECKERS = {
     # ChkAll checkers with all three corrector sets
-    "ChkAllTop2": Checker(top2correctors, 1),
-    "ChkAllTop3": Checker(top3correctors, 1),
-    "ChkAllTop5": Checker(top5correctors, 1),
+    "ChkAll_Top2": Checker(top2correctors, 1),
+    "ChkAll_Top3": Checker(top3correctors, 1),
+    "ChkAll_Top5": Checker(top5correctors, 1),
 
     # ChkBl checkers with all three corrector sets
-    "ChkBlTop2": Checker(top2correctors, 2),
-    "ChkBlTop3": Checker(top3correctors, 2),
-    "ChkBlTop5": Checker(top5correctors, 2),
+    "ChkBl_Top2": Checker(top2correctors, 2),
+    "ChkBl_Top3": Checker(top3correctors, 2),
+    "ChkBl_Top5": Checker(top5correctors, 2),
 
     # ChkAOp checkers with all three corrector sets
-    "ChkAOpTop2": Checker(top2correctors, 5),
-    "ChkAOpTop3": Checker(top3correctors, 5),
-    "ChkAOpTop5": Checker(top5correctors, 5),
+    "ChkAOp_Top2": Checker(top2correctors, 5),
+    "ChkAOp_Top3": Checker(top3correctors, 5),
+    "ChkAOp_Top5": Checker(top5correctors, 5),
 
     # ChkAll with singleton corrector sets
     "ChkAll_swcall": Checker(['swc-all'], 1),
