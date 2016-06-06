@@ -16,8 +16,7 @@ $ pip install python-Levenshtein
 ## INSTALL
 
 ```bash
-$ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/pwmodels.git
-$ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/mistypography.git
+$ pip install git+https://github.com/rchatterjee/mistypography.git
 ```
 
 ## HOW TO USE?  
