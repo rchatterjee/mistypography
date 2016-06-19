@@ -5,7 +5,7 @@ in https://www.cs.cornell.edu/~rahul/papers/pwtypos.pdf.
 ## REQUIREMENTS
 * Install `pwmodel` from [here](https://github.com/rchatterjee/pwmodels.git)
 ```bash
-$ pip isntall git+https://github.com/rchatterjee/pwmodels.git
+$ pip install git+https://github.com/rchatterjee/pwmodels.git
 ```
    This should install all the dependencies, if not, you may have to
    install `python-Levenshtein`.
@@ -16,8 +16,7 @@ $ pip install python-Levenshtein
 ## INSTALL
 
 ```bash
-$ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/pwmodels.git
-$ pip install git+https://rchatterjee@bitbucket.org/rchatterjee/mistypography.git
+$ pip install git+https://github.com/rchatterjee/mistypography.git
 ```
 
 ## HOW TO USE?  

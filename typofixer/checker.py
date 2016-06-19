@@ -66,7 +66,7 @@ class Checker(object):
         self.transform_list_prob = {t: tmp_d[t]/total
                                        for t in self.transform_list}
 
-    @memoized
+    # @memoized
     def get_ball(self, tpw):
         """
         Remember ball does not include the input password, but ball_union does.
@@ -84,9 +84,13 @@ class Checker(object):
         return B|set(tpwlist)
 
     def max_ball_size(self):
+        if self._max_ball_size==0:
+            return 200
         return self._max_ball_size
 
     def max_nh_size(self):
+        if self._max_nh_size:
+            return 2000
         return self._max_nh_size
 
     def get_nh(self, rpw):
@@ -245,9 +249,9 @@ BUILT_IN_CHECKERS = {
     "ChkBl_Top5": Checker(top5correctors, 2),
 
     # ChkAOp checkers with all three corrector sets
-    "ChkAOpTop2": Checker(top2correctors, 5),
-    "ChkAOpTop3": Checker(top3correctors, 5),
-    "ChkAOpTop5": Checker(top5correctors, 5),
+    "ChkAOp_Top2": Checker(top2correctors, 5),
+    "ChkAOp_Top3": Checker(top3correctors, 5),
+    "ChkAOp_Top5": Checker(top5correctors, 5),
 
     # ChkAll with singleton corrector sets
     "ChkAll_swcall": Checker(['swc-all'], 1),
