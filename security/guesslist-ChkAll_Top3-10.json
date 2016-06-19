@@ -1,0 +1,28 @@
+{
+  "typofixer": "Checker: transforms=(4) [same...rm-lastc] (policy=1) (pwmodel=Pwmodel<ngram-4-rockyou>)", 
+  "attacker_model": "Pwmodel<histogram-rockyou>", 
+  "typo_guesslist": [
+    "1234567", 
+    "123456789", 
+    "password1", 
+    "iloveyou2", 
+    "princess1", 
+    "rockyou", 
+    "daniela", 
+    "babygirl1", 
+    "nicole1", 
+    "monkey1"
+  ], 
+  "normal_guesslist": [
+    "123456", 
+    "123456789", 
+    "password", 
+    "iloveyou", 
+    "princess", 
+    "1234567", 
+    "rockyou", 
+    "12345678", 
+    "abc123", 
+    "nicole"
+  ]
+}
