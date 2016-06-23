@@ -1,6 +1,7 @@
 # MISTYPOGRAPHY
 This module implements different typo correction strategies discussed
 in https://www.cs.cornell.edu/~rahul/papers/pwtypos.pdf.
+For more details please refer to the project page https://www.cs.cornell.edu/~rahul/projects/pwtypos.html.
 
 ## REQUIREMENTS
 * Install `pwmodel` from [here](https://github.com/rchatterjee/pwmodels.git)
