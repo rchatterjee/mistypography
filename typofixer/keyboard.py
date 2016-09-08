@@ -1,6 +1,7 @@
 import Levenshtein as lv
 import re
-from common import SHIFT_KEY, CAPS_KEY, ALLOWED_KEYS
+from .common import SHIFT_KEY, CAPS_KEY, ALLOWED_KEYS
+import ipdb
 
 KEYBOARD_TYPE = 'US'
 layout_matrix = {
@@ -83,7 +84,7 @@ class Keyboard(object):
         """
         KM, num_shift = self._keyboard, self._num_shift
         if not self._loc_map:
-            self._loc_map = {ch: (i/num_shift, j, i % num_shift)
+            self._loc_map = {ch: (i//num_shift, j, i % num_shift)
                              for i, r in enumerate(KM)
                              for j, ch in enumerate(r)}
             self._loc_map[' '] = (3, 0, 0)
@@ -113,8 +114,8 @@ class Keyboard(object):
         """
         oi, oj, oshift = self.loc(key_o)
         ti, tj, tshift = self.loc(key_t)
-        print key_o, oi, oj, oshift, '>>><<<<',
-        print ti, tj, tshift, key_t
+        print(key_o, oi, oj, oshift, '>>><<<<',
+              ti, tj, tshift, key_t)
 
         return abs(oi-ti) + abs(oj-tj) + \
             self._shift_discount*abs(oshift-tshift)
@@ -138,7 +139,7 @@ class Keyboard(object):
         i, j, shift = self.loc(char)
         ret = []
         KM, num_shift = self._keyboard, self._num_shift
-        for sh in xrange(num_shift):
+        for sh in range(num_shift):
             for r in range(i-1, i+2):
                 for c in range(j-1, j+2):
                     ch = self.loc2char(r*num_shift+sh, c)
@@ -171,14 +172,16 @@ class Keyboard(object):
         """
         Converts a @word into a key press sequence for the keyboard KB.
         >>> KB = Keyboard('US')
-        >>> KB.word_to_key_presses('Password12!@')
+        >>> KB.word_to_keyseq('Password12!@')
         <s>password12<s>1<s>2
-        >>> KB.word_to_key_presses('PASSword!@')
+        >>> KB.word_to_keyseq('PASSword!@')
         <c>pass</c>word<s>1<s>2
-        >>> KB.word_to_key_presses('PAasWOrd') # this is not what it should but close!
+        >>> KB.word_to_keyseq('PAasWOrd') # this is not what it should but close!
         <s>p<s>aas<s>w<s>ord
         <c>pa</c>as<c>wo</c>rd
         """
+        if isinstance(word, str):
+            word.encode('ascii', 'ignore')
         caps_key = CAPS_KEY
         shift_key = SHIFT_KEY
         assert KEYBOARD_TYPE == 'US', "Not implemented for mobile"
@@ -187,8 +190,8 @@ class Keyboard(object):
         for i, ch in enumerate(word):
             try:
                 ch, shift = self.remove_shift(ch)
-            except Exception, e:
-                print e,  repr(word)
+            except Exception as e:
+                print (e,  repr(word))
                 raise e
             if shift:
                 new_str += shift_key + ch
@@ -271,14 +274,14 @@ class Keyboard(object):
 
         """
         n = len(keyseq)
-        A = [[(), (), (), (), ()] for i in xrange(n+1)]
+        A = [[(), (), (), (), ()] for i in range(n+1)]
         A[0] = [('', False, False),
                 self.part_key_press_string(keyseq, False, False),# FF
                 self.part_key_press_string(keyseq, False, True), # FT
                 self.part_key_press_string(keyseq, True, False), # TF
                 self.part_key_press_string(keyseq, True, True)]  # TT
         A[n] = [A[0][1], ('', False, False), ('', False, True), ('', True, False), ('', True, True)]
-        for j in xrange(1, n):
+        for j in range(1, n):
             last_row = A[j-1]
             row = A[j]
             c = keyseq[j-1]
@@ -341,8 +344,8 @@ class Keyboard(object):
                     yield pre_w + sub_words[i][2*shift+2][0]
                 else:
                     yield pre_w + self.apply_shift_caps(k, shift, caps) + sub_words[i][caps+1][0]
-                    if i==0:
-                        yield self.apply_shift_caps(k, True, caps) + sub_words[i][1][0]
+            # if i==0:
+            #     yield self.apply_shift_caps(k, True, caps) + sub_words[i][1][0]
             # print "Going to delete"
             # delete
             if c==SHIFT_KEY:
@@ -367,11 +370,10 @@ class Keyboard(object):
             insert_keys = ALLOWED_KEYS
         for k in insert_keys:
             if k not in spcl_keys:
-                yield pre_w + self.apply_shift_caps(k, False, caps)
-                yield pre_w + self.apply_shift_caps(k, True, caps)
+                yield pre_w + self.apply_shift_caps(k, shift, caps)
 
-    def key_presses_to_word(self, keyseq):
-        """This is the same function as word_to_key_presses, just trying to
+    def keyseq_to_word(self, keyseq):
+        """This is the same function as word_to_keyseq, just trying to
         make it more efficient. Remeber the capslock and convert the
         shift.
 
@@ -379,9 +381,9 @@ class Keyboard(object):
         return self.part_key_press_string(keyseq)[0]
 
 
-    def key_presses_to_word_slow(self, keyseq):
+    def keyseq_to_word_slow(self, keyseq):
         """
-        Converts a keypress sequence to a word
+        Converts a keyseq sequence to a word
         """
         caps_key = CAPS_KEY
         shift_key = SHIFT_KEY
@@ -413,8 +415,9 @@ class Keyboard(object):
             # apply all capslocks
             word = re.sub(r'{0}(.*?){0}'.format(caps_key),
                           caps_change, word)
-        except Exception, e:
-            print ">>>> I could not figure this out: {!r}, stuck at {!r}".format(keyseq, word)
+        except Exception as e:
+            print(">>>> I could not figure this out: {!r}, stuck at {!r}\n{}"\
+                   .format(keyseq, word, e))
             raise e
         word = word.strip(shift_key).strip(caps_key)
         return word
@@ -440,6 +443,6 @@ def find_typo_type(word_o, word_t):
 if __name__ == '__main__':
     kb = Keyboard('US')
     ks = '{s}wo{c}rd123{s}{c}'.format(c=CAPS_KEY, s=SHIFT_KEY)
-    # p1 = kb.word_to_key_presses(pw1)
+    # p1 = kb.word_to_keyseq(pw1)
     # print "{!r} -> {!r} --> {!r}".format(pw1, p1, pw11)
-    print "{!r} -> {!r}".format(ks, kb.key_presses_to_word(ks))
+    print("{!r} -> {!r}".format(ks, kb.keyseq_to_word(ks)))

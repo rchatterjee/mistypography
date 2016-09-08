@@ -3,7 +3,10 @@ import os, sys, json, csv, re
 import socket
 import random
 import pytest
-from context import Keyboard, SHIFT_KEY, CAPS_KEY
+sys.path.append('./typofixer')
+from keyboard import Keyboard
+SHIFT_KEY = [u'\x03', "<s>"][0]
+CAPS_KEY = [u'\x04', "<c>"][0]
 
     
 class TestKeyboard():
@@ -89,8 +92,8 @@ class TestKeyPresses():
         KB = Keyboard('US')
         kw = KB.key_presses_to_word('{c}asdf{s}1{c}sdf'.format(**key))
         assert 'ASDFasdf' == KB.key_presses_to_word('{c}asdf{s}a{c}sdf'.format(**key))
-        print kw
         assert 'ASDF!sdf' == KB.key_presses_to_word('{c}asdf{s}1{c}sdf'.format(**key))
+        assert KB.key_presses_to_word('{s}apa'.format(**key)) == 'Apa'
                                        
     def test_key_press(self, inp, res):
         inp_res_map = [(('|'), (1,13,1))
@@ -148,3 +151,4 @@ class TestKeyPresses():
 #             #  TODO - write this test
 
 
+# TestKeyPresses().test_key_press_insert_edits('adsf', 'asdfadf')

@@ -3,23 +3,29 @@ __author__ ='Rahul Chatterjee'
 LICENSED to modify and distribute any or all parts of the code.
 """
 
+import ipdb
 import os, sys, json, csv
 import string, re
 import unittest, string
 from collections import defaultdict, Iterable
-from common import ALLOWED_EDITS
-import common
-from keyboard import Keyboard
+from .common import (ALLOWED_EDITS, SHIFT_KEY, CAPS_KEY, ALLOWED_KEYS)
+try:
+    from word2keypress import Keyboard
+except ImportError:
+    from .keyboard import Keyboard
+import numpy as np
 
-ALLOWED_CHARACTERS = string.letters + string.digits + '`~!@#$%^&*()_+-=,/?.<>;\':"[]{}\\| \t'
-NOTSHIFT_2_SHIFT_MAP = dict(zip('`1234567890-=[]\;\',./',
-                                '~!@#$%^&*()_+{}|:"<>?'))
-SHIFT_2_NOTSHIFT_MAP = dict(zip('~!@#$%^&*()_+{}|:"<>?',
-                                '`1234567890-=[]\;\',./'))
+ALLOWED_CHARACTERS = string.ascii_letters + string.digits + string.punctuation + ' ' # removed tab
+
+NOTSHIFT_2_SHIFT_MAP = dict(zip(b'`1234567890-=[]\;\',./',
+                                b'~!@#$%^&*()_+{}|:"<>?'))
+SHIFT_2_NOTSHIFT_MAP = dict(zip(b'~!@#$%^&*()_+{}|:"<>?',
+                                b'`1234567890-=[]\;\',./'))
 SHIFT_SWITCH_MAP = dict(zip('`1234567890-=[]\;\',./~!@#$%^&*()_+{}|:"<>?',
                             '~!@#$%^&*()_+{}|:"<>?`1234567890-=[]\;\',./'))
 SYMDIGIT_re = re.compile(r'(?P<last>(%s)+)$' % '|'.join(map(re.escape, SHIFT_SWITCH_MAP.keys())))
 
+allowed_keys = np.array(list(ALLOWED_KEYS))
 KB = Keyboard('US')
 
 """This is the set of correctors we consider.  A corrector is a
@@ -247,10 +253,9 @@ def edit_on_keypress_seq_typo(word):
     #### this is the NEIGHTBORHOOD  the @word ###
     """
 
-    keypress_w = KB.word_to_key_presses(word)
-    allowed_keys = list(common.ALLOWED_KEYS)
-    spcl_keys = [common.SHIFT_KEY, common.CAPS_KEY]
-    return KB.key_press_insert_edits(keypress_w)
+    keypress_w = KB.word_to_keyseq(word)
+    spcl_keys = [SHIFT_KEY, CAPS_KEY]
+    return list(KB.keyseq_insert_edits(keypress_w))
 
     # for i, c in enumerate(keypress_w):
     #     if c in spcl_keys:
@@ -261,31 +266,31 @@ def edit_on_keypress_seq_typo(word):
     #                  (KB.keyboard_prox_key(keypress_w[i-1]) \
     #                   if i>0 else allowed_keys))
     #     for k in keys_i: # insert
-    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
+    #         yield KB.keyseq_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
     #     for k in keys_r: # replace
-    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:])
+    #         yield KB.keyseq_to_word(keypress_w[:i] + k + keypress_w[i+1:])
 
-    #     yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delet
+    #     yield KB.keyseq_to_word(keypress_w[:i] + keypress_w[i+1:]) # delet
 
     #     if i == len(keypress_w)-1:
     #         for k in allowed_keys:
-    #             yield KB.key_presses_to_word(keypress_w + k) # insert at the end
+    #             yield KB.keyseq_to_word(keypress_w + k) # insert at the end
 
 def edit_on_keypress_seq_corr(word):
     """
     #### this is the BALL of the @word ###
     """
-    keypress_w = KB.word_to_key_presses(word)
-    return KB.key_press_insert_edits(keypress_w, common.ALLOWED_KEYS, common.ALLOWED_KEYS)
+    keypress_w = KB.word_to_keyseq(word)
+    return list(KB.keyseq_insert_edits(keypress_w, allowed_keys, allowed_keys))
     # for i, c in enumerate(keypress_w):
         
     #     for k in allowed_keys:
-    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
-    #         yield KB.key_presses_to_word(keypress_w[:i] + k + keypress_w[i+1:]) # replace
-    #     yield KB.key_presses_to_word(keypress_w[:i] + keypress_w[i+1:]) # delete
+    #         yield KB.keyseq_to_word(keypress_w[:i] + k + keypress_w[i:]) # insert
+    #         yield KB.keyseq_to_word(keypress_w[:i] + k + keypress_w[i+1:]) # replace
+    #     yield KB.keyseq_to_word(keypress_w[:i] + keypress_w[i+1:]) # delete
     #     if i == len(keypress_w)-1:  # insert at the end
     #         for k in allowed_keys[:-2]:
-    #             yield KB.key_presses_to_word(keypress_w + k) # insert at the end
+    #             yield KB.keyseq_to_word(keypress_w + k) # insert at the end
 
 
 def check_invalid_edits(edits):
@@ -333,7 +338,7 @@ def modify(word, apply_edits=["All"], typo=False):
     allowed_edits = set(EDITS_NAME_FUNC_MAP[a][istypo] for a in apply_edits)
     for e in allowed_edits:
         tpw = e(word)
-        if isinstance(tpw, basestring):
+        if isinstance(tpw, str):
             mutated_words[tpw].add(e)
         else:
             for t in tpw:
@@ -353,6 +358,8 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
                   set of corrected passwords after applying the corrector functions.
 
     """
+    if isinstance(word, bytes):
+        word = word.decode('utf-8')
     # if not pw_filter(word):
     #     print "I am modifying a password ('{}') which does not pass its own filter ({})"\
     #     .format(word, pw_filter)
@@ -372,10 +379,10 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
             # print "Tpw='{}' is None for rpw='{}' "\
             #     "a={} and e={}".format(tpw, word, a, str(e))
             continue
-        if isinstance(tpw, basestring):
+        if isinstance(tpw, (str, bytes)):
             tpw = [tpw]
         elif not isinstance(tpw, Iterable):
-            print "WTF!! tpw ('{!r}') is of type = {}".format(tpw, type(tpw))
+            print("WTF!! tpw ('{!r}') is of type = {}".format(tpw, type(tpw)))
             raise ValueError
         mutated_words |= set(filter(pw_filter, tpw))
     # print "{word} -> {mutated_words}".format(word=word, mutated_words=mutated_words)
@@ -386,6 +393,6 @@ def fast_modify(word, apply_edits=["All"], typo=False, pw_filter=None):
 if __name__ == "__main__":
     w = 'woRD123'
     ball = set(edit_on_keypress_seq_typo(w))
-    print [w for w in ball if not w.startswith(' ')]
+    print([w for w in ball if not w.startswith(' ')])
     assert '\x04' not in ball
-    print len(ball)
+    print(len(ball))

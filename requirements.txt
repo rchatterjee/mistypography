@@ -9,10 +9,11 @@ pathlib2==2.1.0
 pexpect==4.0.1
 pickleshare==0.7.2
 ptyprocess==0.5.1
-pwmodels==1.0
 py==1.4.31
 pytest==2.9.1
 python-Levenshtein==0.12.0
 simplegeneric==0.8.1
 six==1.10.0
 traitlets==4.2.1
+bz2file==0.98
+# pwmodels==1.0

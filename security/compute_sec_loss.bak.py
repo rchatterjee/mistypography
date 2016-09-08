@@ -509,8 +509,7 @@ def test_evaluation():
 
 
 def test_coverage(q=10):
-    if isinstance(q, basestring):
-        q = int(q)
+    q = int(q)
     # A = old_greedy_maximum_coverage_random_typos(10, 5)
     # A = greedy_maximum_coverage_heap(1000)
     attacker_pwmodel = HistPw(os.path.expanduser('~/passwords/rockyou-withcount.txt.bz2'))

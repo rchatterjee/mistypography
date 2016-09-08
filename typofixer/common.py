@@ -16,26 +16,28 @@ MIN_LENGHT_PW = 6   # Only consider passwords with length 6 or more
 PW_FILTER = lambda x: is_asciistring(x) and len(x)>=MIN_LENGHT_PW
 
 user_friendly = 0
-BLANK = [u'\x00', '*'][user_friendly]   # '\b'
-STARTSTR = [u'\x01', '^'][user_friendly]
-ENDSTR = [u'\x02', '$'][user_friendly]
+BLANK = [b'\x00', b'*'][user_friendly]   # '\b'
+STARTSTR = [b'\x01', '^'][user_friendly]
+ENDSTR = [b'\x02', b'$'][user_friendly]
 
-SHIFT_KEY = [u'\x03', "<s>"][user_friendly]
-CAPS_KEY = [u'\x04', "<c>"][user_friendly]
+SHIFT_KEY = [b'\x03', b"<s>"][user_friendly]
+CAPS_KEY = [b'\x04', b"<c>"][user_friendly]
 
-ALLOWED_KEYS = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./ "
-ALLOWED_CHARACTERS = string.letters + string.digits + '`~!@#$%^&*()_+-=,/?.<>;\':"[]{}\\| \t'
+ALLOWED_KEYS = b"`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./ "
+ALLOWED_CHARACTERS = string.ascii_letters + string.digits + string.punctuation + ' ' # removed tab
 
 # ALLOWED_KEYS += BLANK +  + STARTSTR + ENDSTR + SHIFT_KEY + CAPS_KEY
 ALLOWED_KEYS += SHIFT_KEY + CAPS_KEY
 
 ### Future work to do it on ALLOWED_KEYS ##
-ALLOWED_CHARACTERS += BLANK + STARTSTR + ENDSTR
+ALLOWED_CHARACTERS += str(BLANK + STARTSTR + ENDSTR)
 
 def dp(**kwargs):
-    print ''
-    print '\t'.join("%s: %s" % (k,str(v)) \
-                    for k,v in kwargs.items())
+    print(
+        '\n',
+        '\t'.join("%s: %s" % (k,str(v)) \
+                  for k,v in kwargs.items())
+    )
 
 
 ## All allowed correctors
@@ -105,6 +107,10 @@ def getallgroups(arr, k=-1):
                                     for j in range(1,k+1))
 
 def is_asciistring(s):
+    return all(ord(c)<128 for c in s) # python 3
+    # python 2 version
+    if not isinstance(s, str):
+        return False
     try:
         s.decode('ascii')
         return True
@@ -150,7 +156,7 @@ def open_(filename, mode='r'):
     """Wrapper over normal python open, that opens compressed
     files in format such as bz2, gz, etc.
     """
-    print filename
+    print(__func__, filename)
     if mode=='w':
         type_ = filename.split('.')[-1]
     else:
