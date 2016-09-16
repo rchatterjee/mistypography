@@ -17,29 +17,43 @@ from collections import OrderedDict, defaultdict
 from heap import priority_dict
 import warnings
 import csv
-from subprocess import Popen
+import joblib
 
+from multiprocessing import Pool
+
+
+
+rpw_done = set()  # to refrain from reintroducing a ball
+global_attacker_pwmodel = None # Only used in power
+global_typofixer = None # Only used in power
+def power(tpw):
+    global global_typofixer, global_attacker_pwmodel, rpw_done
+    return -sum(
+        global_attacker_pwmodel.prob(pw)
+        for pw in
+        ((global_typofixer.check(tpw)|set([tpw]))-rpw_done)
+    )
 
 def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
     """
     Creates a list of q best guesses.  
     """
     print("Guessing for DETERMINISTIC typo correction")
+    global rpw_done, global_typofixer, global_attacker_pwmodel
+    global_typofixer = typofixer
+    global_attacker_pwmodel = attacker_pwmodel
+
     subset_heap = priority_dict()
     b = typofixer.max_ball_size  # ball size 
     n = typofixer.max_nh_size    # neighborhood size
     pwlist = attacker_pwmodel.iterpasswords()
     guess_list = []
     tpw_done = set()  # to make the probabiltiy zero, 
-    rpw_done = set()  # to refrain from reintroducing a ball
     l = 0
     estimated_ball_weight = 0.0
     normal_guesses = []
     def totp(l):
         return sum(attacker_pwmodel.prob(pw) for pw in l)
-
-    def power(tpw):
-        return totp((typofixer.check(tpw)|set([tpw]))-rpw_done)
 
     while len(guess_list) < q:
         rpw, _ = next(pwlist)
@@ -49,8 +63,10 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
             normal_guesses.append(rpw)
         p = attacker_pwmodel.prob(rpw)
         if estimated_ball_weight <= 0:
-            estimated_ball_weight = p * b()  # The weight of the heaviest ball in rpw's neighbor
-        if subset_heap:  # if subset heap is not empty, take out the heaviest ball in it
+            # The weight of the heaviest ball in rpw's neighbor
+            estimated_ball_weight = p * b()
+        # if subset heap is not empty, take out the heaviest ball in it
+        if subset_heap:
             [tpw, weight] = subset_heap.pop_smallest()
             weight = -weight
             if weight <= 0:
@@ -61,7 +77,7 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
                 # assert w  == weight, "{!r} ::= {} <---> {}".format(tpw, w, weight)
                 print("Guess {:04d}:  {!r}, weight={}, new_ball={}, actual-cover={}" \
                       .format(len(guess_list), tpw, weight,
-                              (typofixer.check(tpw)|set([tpw])) - rpw_done,
+                              list((typofixer.check(tpw)|set([tpw])) - rpw_done)[:10],
                               power(tpw)))
                 guess_list.append(tpw)
                 tpw_done.add(tpw)
@@ -87,10 +103,19 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
                 subset_heap[tpw] = -weight
 
         # Insert the neighbors of this rpw
-        for ttpw in typofixer.get_nh(rpw) | set([rpw]): # all the neighbors including itself
-            if (ttpw not in subset_heap) and (ttpw not in tpw_done): # if it is not already dead or in the heap
-                subset_heap[ttpw] = -power(ttpw)
-                # mw = max(mw, subset_heap[ttpw])
+        # all the neighbors including itself
+        # if it is not already dead or in the heap
+        all_nhs = [ttpw for ttpw in typofixer.get_nh(rpw) | set([rpw])
+                   if (ttpw not in subset_heap) and (ttpw not in tpw_done)]
+        # weights = [power(ttpw) for ttpw in all_nhs]
+        with joblib.Parallel(n_jobs=7) as parallel:
+            weights = parallel(
+                joblib.delayed(power)(ttpw)
+                for ttpw in all_nhs
+            )
+        for ttpw, pwr in zip(all_nhs, weights):
+            subset_heap[ttpw] = pwr # -power(ttpw)
+            # mw = max(mw, subset_heap[ttpw])
         # estimated_ball_weight = estimated_ball_weight * 0.8 - mw * 0.2
         if len(subset_heap) > l:
             print("Heap size: {0}".format(len(subset_heap)))
@@ -204,4 +229,3 @@ e.g.: $ python {} ChkBl_Top3 10 ~/passwrods/rockyou-withcount.txt.bz2\n""".forma
             print(BUILT_IN_CHECKERS.keys())
             exit(2)
         compute_guesses_and_success_rate(chker, q, sys.argv[3])
-    

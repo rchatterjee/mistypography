@@ -6,38 +6,108 @@
 # 3. Then as usual.
 
 import string
-from pwmodel import fast_fuzzysearch, HistPw
+import sys, os
+homedir = os.path.expanduser('~')
+sys.path.append('{}/passwords/'.format(homedir))
+from readpw import Passwords
+# from pwmodel import fast_fuzzysearch, HistPw
 from heap import priority_dict
+import numpy as np
 import os, sys
 import time
+import multiprocessing
+import pyximport
+pyximport.install(
+    setup_args={"include_dirs": np.get_include()},
+    reload_support=True
+)
+# from fastedit import apply_edits
 
 allowed_chars = string.printable[:-5]
 PWLIMIT = int(2e6)
+guessed_set = set()
+subset_heap = priority_dict()
+
+nhplus = None
+def job_parallel(func, n_proc=7, *args):
+    p = Pool(n_proc)
+    tpws, nhplus = args
+    each_part = len(tpws)/n_proc+1
+    chunks = (args[i*each_part:i+each_part] for i in range(n_proc))
+    return itertools.chain(*p.map(func, chunks))
 
 def apply_edits(w):
-    """
-    Apply all edits to w and returned the list of possible strings.
-    """
-    yield w.lower()
-    yield w.swapcase()
-    for i in xrange(len(w)+1):
-        for c in allowed_chars:
-            yield w[:i]+c+w[i:]  # insert
-            yield w[:i]+c+w[i+1:]  # replace
-        yield w[:i]+w[i+1:]  # delete
+    yield w.capitalize()
+    yield w[0].upper() + w[1:]
+    yield w[0].lower() + w[1:]
+    for c in allowed_chars:
+        for i in range(len(w)):
+            yield w[:i] + c + w[i:]
+            yield w[:i] + c + w[i+1:]
+        yield w + c
+    for i in range(len(w)):
+        yield w[:i] + w[i+1:]
 
 
-def greedy_maxcoverage_heap(attacker_pwmodel, q, **kwargs):
+def getball(tpw):
+    return np.array(filter(
+        lambda x: x>=0,
+        [
+            pwm.pw2id(pw)
+            for pw in apply_edits(tpw)
+            if len(pw)>=6
+        ]
+    ))
+
+    
+pwm = None
+def greedy_maxcoverage_heap(fname, q, **kwargs):
+    global pwm, guessed_set, subset_heap
+    pwm = Passwords(fname)
     subset_heap = priority_dict()
     covered = set()
-    guessed_set = set() # guessed_set \subseteq covered, and equal to guesses 
-    guesses = []
-    for rpw in attacker_pwmodel.iterpasswords():
+    guess_list = []
+    ballsize = 2000 # I don't care any bigger ball
+    freq_cache = {}
+    done = set()
+    pwfreq = pwm.values()[::] # deep copy of the frequencies
+    p = multiprocessing.Pool(6)
+    l = 1
+    st = time.time()
+    for i, (pwid, f) in enumerate(pwm):
+        rpw = pwm.id2pw(pwid)
         if len(rpw)<6: continue
-        nhplus = set(attacker_pwmodel.similarpws(rpw, ed=2)) - covered
-        for tpw in apply_edits(rpw):
-            if  (tpw not in subset_heap) and (tpw not in guessed_set):
-                subset_heap[tpw] = -sum(pwmodel.prob(tpw) for tw in nhplus.query(rpw))
+        pw = pwm.id2pw(pwid)
+        neighbors = set(apply_edits(pw.encode('ascii', errors='ignore'))) - done
+        for tpw, w in subset_heap.sorted_iter():
+            w = -w
+            ball = getball(tpw)
+            nw = pwfreq[ball].sum()
+            if w == nw:
+                if w >= f*ballsize: # correct value
+                    print "Guess: {} weight: {}".format(tpw, w/pwm.totalf())
+                    done.add(tpw)
+                    guess_list.append(tpw)
+                    pwfreq[ball] = 0
+                else:  # The ball weight is still small
+                    subset_heap[tpw] = -nw
+                    break
+            elif nw>=p:
+                subset_heap[tpw] = -nw
+
+        for tpw, ball in zip(neighbors, p.map(getball, iter(neighbors))):
+            subset_heap[tpw] = -pwfreq[ball].sum()
+            
+        if len(subset_heap) > l:
+            print("({}) : Heap size: {}".format(time.time()-st, len(subset_heap)))
+            l = len(subset_heap) * 2
+        if i%10==0:
+            print("({}) : {}: {} ({})".format(time.time()-st, i, rpw, f))
+        if len(guess_list)>=q:
+            break
+    with open('guess_{}.json'.format(q), 'w') as f:
+        json.dump(f, guess_list)
+    return guess_list
 
 import dataset
 def create_pw_db_(attacker_pwmodel, force=False):
@@ -61,8 +131,9 @@ def insert_typos_to_db(db):
     typotab = db['typos']
     for d in db.query('select pw, id from passwords limit PWLIMIT'):
         pw, id_ = d['pw'], d['id']
-        apply_edits
+        apply_edits(pw)
         
 if __name__ == '__main__':
     import sys
-    create_pw_db_(sys.argv[1])
+    # create_pw_db_(sys.argv[1])
+    greedy_maxcoverage_heap(sys.argv[1], 1000)

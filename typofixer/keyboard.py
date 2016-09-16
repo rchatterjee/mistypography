@@ -1,7 +1,6 @@
 import Levenshtein as lv
 import re
 from .common import SHIFT_KEY, CAPS_KEY, ALLOWED_KEYS
-import ipdb
 
 KEYBOARD_TYPE = 'US'
 layout_matrix = {

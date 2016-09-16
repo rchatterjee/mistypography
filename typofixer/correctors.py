@@ -3,7 +3,6 @@ __author__ ='Rahul Chatterjee'
 LICENSED to modify and distribute any or all parts of the code.
 """
 
-import ipdb
 import os, sys, json, csv
 import string, re
 import unittest, string
@@ -252,7 +251,7 @@ def edit_on_keypress_seq_typo(word):
     # TODO - add typo model to it
     #### this is the NEIGHTBORHOOD  the @word ###
     """
-
+    word = word.encode('ascii', 'ignore')
     keypress_w = KB.word_to_keyseq(word)
     spcl_keys = [SHIFT_KEY, CAPS_KEY]
     return list(KB.keyseq_insert_edits(keypress_w))
@@ -280,6 +279,7 @@ def edit_on_keypress_seq_corr(word):
     """
     #### this is the BALL of the @word ###
     """
+    word = word.encode('ascii', 'ignore')
     keypress_w = KB.word_to_keyseq(word)
     return list(KB.keyseq_insert_edits(keypress_w, allowed_keys, allowed_keys))
     # for i, c in enumerate(keypress_w):
