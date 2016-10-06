@@ -13,7 +13,7 @@ from readpw import Passwords
 # from pwmodel import fast_fuzzysearch, HistPw
 from heap import priority_dict
 import numpy as np
-import os, sys
+import os, sys, json
 import time
 import multiprocessing
 import pyximport
@@ -25,16 +25,14 @@ pyximport.install(
 
 allowed_chars = string.printable[:-5]
 PWLIMIT = int(2e6)
-guessed_set = set()
-subset_heap = priority_dict()
 
 nhplus = None
 def job_parallel(func, n_proc=7, *args):
-    p = Pool(n_proc)
+    pool = Pool(n_proc)
     tpws, nhplus = args
     each_part = len(tpws)/n_proc+1
     chunks = (args[i*each_part:i+each_part] for i in range(n_proc))
-    return itertools.chain(*p.map(func, chunks))
+    return itertools.chain(*pool.map(func, chunks))
 
 def apply_edits(w):
     yield w.capitalize()
@@ -59,10 +57,9 @@ def getball(tpw):
         ]
     ))
 
-    
 pwm = None
 def greedy_maxcoverage_heap(fname, q, **kwargs):
-    global pwm, guessed_set, subset_heap
+    global pwm
     pwm = Passwords(fname)
     subset_heap = priority_dict()
     covered = set()
@@ -70,14 +67,15 @@ def greedy_maxcoverage_heap(fname, q, **kwargs):
     ballsize = 2000 # I don't care any bigger ball
     freq_cache = {}
     done = set()
-    pwfreq = pwm.values()[::] # deep copy of the frequencies
-    p = multiprocessing.Pool(6)
+    pwfreq = np.copy(pwm.values()) # deep copy of the frequencies
     l = 1
     st = time.time()
+    pool = multiprocessing.Pool(5)
     for i, (pwid, f) in enumerate(pwm):
         rpw = pwm.id2pw(pwid)
         if len(rpw)<6: continue
         pw = pwm.id2pw(pwid)
+        p = pwm.prob(pw)
         neighbors = set(apply_edits(pw.encode('ascii', errors='ignore'))) - done
         for tpw, w in subset_heap.sorted_iter():
             w = -w
@@ -85,28 +83,100 @@ def greedy_maxcoverage_heap(fname, q, **kwargs):
             nw = pwfreq[ball].sum()
             if w == nw:
                 if w >= f*ballsize: # correct value
-                    print "Guess: {} weight: {}".format(tpw, w/pwm.totalf())
+                    print("Guess({}/{}): {} weight: {}"\
+                        .format(len(guess_list), q, tpw, w/pwm.totalf()))
                     done.add(tpw)
                     guess_list.append(tpw)
                     pwfreq[ball] = 0
+                    if len(guess_list)>=q:
+                        break
                 else:  # The ball weight is still small
                     subset_heap[tpw] = -nw
                     break
-            elif nw>=p:
+            else:
                 subset_heap[tpw] = -nw
-
-        for tpw, ball in zip(neighbors, p.map(getball, iter(neighbors))):
+        b_max = 0
+        for tpw, ball in zip(neighbors, pool.map(getball, iter(neighbors))):
             subset_heap[tpw] = -pwfreq[ball].sum()
-            
+            b_max = max(b_max, ball.shape[0])
+        ballsize = ballsize*0.9 + b_max*0.1
+
         if len(subset_heap) > l:
-            print("({}) : Heap size: {}".format(time.time()-st, len(subset_heap)))
+            print(">< ({}) : Heap size: {} ballsize: {}".format(
+                time.time()-st, len(subset_heap), ballsize
+            ))
             l = len(subset_heap) * 2
         if i%10==0:
             print("({}) : {}: {} ({})".format(time.time()-st, i, rpw, f))
         if len(guess_list)>=q:
             break
+    normal_succ = pwm.sumvalues(q=q)/pwm.totalf()
+    guessed_pws = np.unique(np.concatenate(pool.map(getball, guess_list)))
+    fuzzy_succ = pwm.values()[guessed_pws].sum()/pwm.totalf()
+    print("normal succ: {}, fuzzy succ: {}".format(normal_succ, fuzzy_succ))
     with open('guess_{}.json'.format(q), 'w') as f:
-        json.dump(f, guess_list)
+        json.dump(guess_list, f)
+    return guess_list
+
+pwm = None
+def approx_guesses(fname, q):
+    global pwm
+    pwm = Passwords(fname)
+    subset_heap = priority_dict()
+    covered = set()
+    guess_list = []
+    ballsize = 1000 # I don't care any bigger ball
+    freq_cache = {}
+    done = set()
+    pwfreq = np.copy(pwm.values()) # deep copy of the frequencies
+    l = 1
+    st = time.time()
+    for i, (pwid, f) in enumerate(pwm):
+        rpw = pwm.id2pw(pwid)
+        if len(rpw)<6: continue
+        pw = pwm.id2pw(pwid)
+        p = pwm.prob(pw)
+        neighbors = [rpw]
+        for tpw, w in subset_heap.sorted_iter():
+            w = -w
+            ball = getball(tpw)
+            nw = pwfreq[ball].sum()
+            if w == nw:
+                if w >= f*ballsize: # correct value
+                    print "Guess({}/{}): {} weight: {}"\
+                        .format(len(guess_list), q, tpw, w/pwm.totalf())
+                    done.add(tpw)
+                    guess_list.append(tpw)
+                    pwfreq[ball] = 0
+                    if len(guess_list)>=q:
+                        break
+                else:  # The ball weight is still small
+                    subset_heap[tpw] = -nw
+                    break
+            else:
+                subset_heap[tpw] = -nw
+        for tpw, ball in zip(neighbors, map(getball, iter(neighbors))):
+            ballsize = ballsize*0.9 + ball.shape[0]*0.1
+            subset_heap[tpw] = -pwfreq[ball].sum()
+
+        if len(subset_heap) > l:
+            print(">> ({}) : Heap size: {} ballsize: {}".format(
+                time.time()-st, len(subset_heap), ballsize
+            ))
+            l = len(subset_heap) * 2
+        if i%30==0:
+            print(">> ({}) : {}: {!r} ({})".format(time.time()-st, i, rpw, f))
+        if len(guess_list)>=q:
+            break
+    normal_succ = pwm.sumvalues(q=q)/pwm.totalf()
+    pool = multiprocessing.Pool(7)
+    guessed_pws = np.unique(np.concatenate(pool.map(getball, guess_list)))
+    fuzzy_succ = pwm.values()[
+        guessed_pws
+    ].sum()/pwm.totalf()
+    print("normal succ: {}, fuzzy succ: {}".format(normal_succ, fuzzy_succ))
+    with open('approx_guess_{}.json'.format(q), 'wb') as f:
+        json.dump(guess_list, f)
     return guess_list
 
 import dataset
@@ -136,4 +206,6 @@ def insert_typos_to_db(db):
 if __name__ == '__main__':
     import sys
     # create_pw_db_(sys.argv[1])
+    approx_guesses(sys.argv[1], 1000)
     greedy_maxcoverage_heap(sys.argv[1], 1000)
+    
