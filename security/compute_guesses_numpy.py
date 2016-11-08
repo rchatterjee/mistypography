@@ -70,6 +70,8 @@ def get_nh(w):
             ent_tpw = entropy(tpw)
             return (ent_tpw>=MIN_ENTROPY and
                     (ent_tpw-ent_w)>=REL_ENT_CUTOFF)
+        else:
+            return True
     for tpw in KB.word_to_typos(str(w)):
         if not filter_(tpw): continue
         ret[i] = tpw

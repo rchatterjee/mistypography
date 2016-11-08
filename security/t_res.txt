@@ -5044,4 +5044,13 @@ Accumulating: 610000
 Accumulating: 620000
 Accumulating: 630000
 Accumulating: 640000
-Accumulating: 650000
+Accumulating: 650000Done creating all the parts
+Joining: (<readpw.Passwords object at 0x10659ab50>, 1000000, 0, 2000000)
+Reading: /Users/rahul/mistypography/security/typodir/rockyou-withcount__0_1000000_rpw_nh_graph.npz ...Done
+Reading: /Users/rahul/mistypography/security/typodir/rockyou-withcount__1000000_2000000_rpw_nh_graph.npz ...Done
+Joining trees
+('Number of typos: ', 1999852)
+Accumulating: 0
+Accumulating: 1000000
+Saving all data... /Users/rahul/mistypography/security/typodir/rockyou-withcount__0_2000000_typo.trie /Users/rahul/mistypography/security/typodir/rockyou-withcount__0_2000000_rpw_nh_graph.npz
+Done!
