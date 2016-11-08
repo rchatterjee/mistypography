@@ -16,3 +16,4 @@ helper.py
 build/
 rockyou-*.db
 typodir/
+typodir.policy/

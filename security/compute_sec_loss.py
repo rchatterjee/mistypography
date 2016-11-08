@@ -2,7 +2,7 @@
 The best guesses are computed using greedy algorithm (and iterated greedy (TODO)
 algoritm).
 
-Returns: a file containing the list of guesses, and the guessing probability for 
+Returns: a file containing the list of guesses, and the guessing probability for
 q=5,10,100,1000, q (user input)
 
 """
@@ -18,7 +18,6 @@ from heap import priority_dict
 import warnings
 import csv
 import joblib
-
 from multiprocessing import Pool
 
 
@@ -36,7 +35,7 @@ def power(tpw):
 
 def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
     """
-    Creates a list of q best guesses.  
+    Creates a list of q best guesses.
     """
     print("Guessing for DETERMINISTIC typo correction")
     global rpw_done, global_typofixer, global_attacker_pwmodel
@@ -44,11 +43,11 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
     global_attacker_pwmodel = attacker_pwmodel
 
     subset_heap = priority_dict()
-    b = typofixer.max_ball_size  # ball size 
+    b = typofixer.max_ball_size  # ball size
     n = typofixer.max_nh_size    # neighborhood size
     pwlist = attacker_pwmodel.iterpasswords()
     guess_list = []
-    tpw_done = set()  # to make the probabiltiy zero, 
+    tpw_done = set()  # to make the probabiltiy zero,
     l = 0
     estimated_ball_weight = 0.0
     normal_guesses = []
@@ -157,7 +156,7 @@ def compute_guesses_and_success_rate(checker, q, real_pwm_f):
 
     print("\n{:*^60}".format("Security loss"))
     print("{:>5s}, {:>9s}, {:>13s}, {:>8s}".format("q", "lambda_q", "lambda_t_q", "secloss"))
-    
+
     def totprob(l):
         return sum(pwm.prob(pw) for pw in l)
 
@@ -203,7 +202,7 @@ def test_success_rate(real_pwm_f):
     ###########################################################################
     # tpwp = pwm.prob_correction(tpwp)
     # nwp = pwm.prob_correction(nwp)
-    # print tpwp, nwp, tpwp - nwp 
+    # print tpwp, nwp, tpwp - nwp
     for q in Q:
         ball = typofixer.get_ball_union(tpwlist[:q])
         print(set(normal_guesses[:q]) - ball)
@@ -220,7 +219,7 @@ if __name__ == "__main__":
         print("""
 You need to provide 3 things: a checker, a value of 'q', and a filename for real password distribution
 e.g.: $ python {} ChkBl_Top3 10 ~/passwrods/rockyou-withcount.txt.bz2\n""".format(__file__) )
-        exit(1) 
+        exit(1)
     else:
         q = int(sys.argv[2])
         chker = sys.argv[1]

@@ -1,9 +1,18 @@
 # Compute the security loss of edit 1 correction for q guesses.
-# 1. for each password compute all the passwords B^2 that are within
-#    edit-distance 2 from the original passwrod w
-# 2. Then for each point in the neighborhood around w, find the subset
-#    of the points in B^2 which are within edit distance 1.
-# 3. Then as usual.
+# Required: A typo model, or a way to generate the neighborhood of a password
+# 1. Create the neighborhood graph of the real password, and then
+# 2. Create the ball structure (somehow)
+# 3. After having a data structure for balls, and neighbors, computing
+#    guesses is no brainer.
+# Main Challenge: How to store those data structures in disk, and load it.
+
+# What I do right now, create trie of the typos, and a gigantic matrix
+# of neigborhood map, this is okay because we decide to have a fixed
+# length neighborhood.  The balls are some stored some time they are
+# just comptued on the fly.
+
+## TODO: Updatable typo trie, so that givea typo trie, we can add more
+## item to it.
 
 import string
 import sys, os
@@ -16,208 +25,30 @@ import numpy as np
 import os, sys, json
 import time
 import multiprocessing
-import pyximport
-# pyximport.install(
-#     setup_args={"include_dirs": np.get_include()},
-#     reload_support=True
-# )
-# from fastedit import apply_edits
 from word2keypress import Keyboard
 from word2keypress.weighted_edist import sample_typos, get_topk_typos
 from zxcvbn import password_strength
 
 KB = Keyboard()
 allowed_chars = string.printable[:-5]
-PWLIMIT = int(2e6)
-
-nhplus = None
-def job_parallel(func, n_proc=7, *args):
-    pool = Pool(n_proc)
-    tpws, nhplus = args
-    each_part = len(tpws)/n_proc+1
-    chunks = (args[i*each_part:i+each_part] for i in range(n_proc))
-    return itertools.chain(*pool.map(func, chunks))
-
-def apply_edits(w):
-    yield w.capitalize()
-    yield w[0].upper() + w[1:]
-    yield w[0].lower() + w[1:]
-    for c in allowed_chars:
-        for i in range(len(w)):
-            yield w[:i] + c + w[i:]
-            yield w[:i] + c + w[i+1:]
-        yield w + c
-    for i in range(len(w)):
-        yield w[:i] + w[i+1:]
-
-
-def getball(tpw):
-    return np.array(filter(
-        lambda x: x>=0,
-        [
-            pwm.pw2id(pw)
-            for pw in apply_edits(tpw)
-            if len(pw)>=6
-        ]
-    ))
-
-pwm = None
-def greedy_maxcoverage_heap(fname, q, **kwargs):
-    global pwm
-    pwm = Passwords(fname)
-    subset_heap = priority_dict()
-    covered = set()
-    guess_list = []
-    ballsize = 2000 # I don't care any bigger ball
-    freq_cache = {}
-    done = set()
-    pwfreq = np.copy(pwm.values()) # deep copy of the frequencies
-    l = 1
-    st = time.time()
-    pool = multiprocessing.Pool(5)
-    for i, (pwid, f) in enumerate(pwm):
-        rpw = pwm.id2pw(pwid)
-        if len(rpw)<6: continue
-        pw = pwm.id2pw(pwid)
-        p = pwm.prob(pw)
-        neighbors = set(apply_edits(pw.encode('ascii', errors='ignore'))) - done
-        for tpw, w in subset_heap.sorted_iter():
-            w = -w
-            ball = getball(tpw)
-            nw = pwfreq[ball].sum()
-            if w == nw:
-                if w >= f*ballsize: # correct value
-                    print("Guess({}/{}): {} weight: {}"\
-                        .format(len(guess_list), q, tpw, w/pwm.totalf()))
-                    done.add(tpw)
-                    guess_list.append(tpw)
-                    pwfreq[ball] = 0
-                    if len(guess_list)>=q:
-                        break
-                else:  # The ball weight is still small
-                    subset_heap[tpw] = -nw
-                    break
-            else:
-                subset_heap[tpw] = -nw
-        b_max = 0
-        for tpw, ball in zip(neighbors, pool.map(getball, iter(neighbors))):
-            subset_heap[tpw] = -pwfreq[ball].sum()
-            b_max = max(b_max, ball.shape[0])
-        ballsize = ballsize*0.9 + b_max*0.1
-
-        if len(subset_heap) > l:
-            print(">< ({}) : Heap size: {} ballsize: {}".format(
-                time.time()-st, len(subset_heap), ballsize
-            ))
-            l = len(subset_heap) * 2
-        if i%10==0:
-            print("({}) : {}: {} ({})".format(time.time()-st, i, rpw, f))
-        if len(guess_list)>=q:
-            break
-    normal_succ = pwm.sumvalues(q=q)/pwm.totalf()
-    guessed_pws = np.unique(np.concatenate(pool.map(getball, guess_list)))
-    fuzzy_succ = pwm.values()[guessed_pws].sum()/pwm.totalf()
-    print("normal succ: {}, fuzzy succ: {}".format(normal_succ, fuzzy_succ))
-    with open('guess_{}.json'.format(q), 'w') as f:
-        json.dump(guess_list, f)
-    return guess_list
-
-pwm = None
-def approx_guesses(fname, q):
-    """
-    TODO: WRITE SOMETHING HERE
-    """
-    global pwm
-    pwm = Passwords(fname)
-    subset_heap = priority_dict()
-    covered = set()
-    guess_list = []
-    ballsize = 1000 # I don't care any bigger ball
-    freq_cache = {}
-    done = set()
-    pwfreq = np.copy(pwm.values()) # deep copy of the frequencies
-    l = 1
-    st = time.time()
-    for i, (pwid, f) in enumerate(pwm):
-        rpw = pwm.id2pw(pwid)
-        if len(rpw)<6: continue
-        pw = pwm.id2pw(pwid)
-        p = pwm.prob(pw)
-        neighbors = [rpw]
-        for tpw, w in subset_heap.sorted_iter():
-            w = -w
-            ball = getball(tpw)
-            nw = pwfreq[ball].sum()
-            if w == nw:
-                if w >= f*ballsize: # correct value
-                    print "Guess({}/{}): {} weight: {}"\
-                        .format(len(guess_list), q, tpw, w/pwm.totalf())
-                    done.add(tpw)
-                    guess_list.append(tpw)
-                    pwfreq[ball] = 0
-                    if len(guess_list)>=q:
-                        break
-                else:  # The ball weight is still small
-                    subset_heap[tpw] = -nw
-                    break
-            else:
-                subset_heap[tpw] = -nw
-        for tpw, ball in zip(neighbors, map(getball, iter(neighbors))):
-            ballsize = ballsize*0.9 + ball.shape[0]*0.1
-            subset_heap[tpw] = -pwfreq[ball].sum()
-
-        if len(subset_heap) > l:
-            print(">> ({}) : Heap size: {} ballsize: {}".format(
-                time.time()-st, len(subset_heap), ballsize
-            ))
-            l = len(subset_heap) * 2
-        if i%30==0:
-            print(">> ({}) : {}: {!r} ({})".format(time.time()-st, i, rpw, f))
-        if len(guess_list)>=q:
-            break
-    normal_succ = pwm.sumvalues(q=q)/pwm.totalf()
-    pool = multiprocessing.Pool(7)
-    guessed_pws = np.unique(np.concatenate(pool.map(getball, guess_list)))
-    fuzzy_succ = pwm.values()[
-        guessed_pws
-    ].sum()/pwm.totalf()
-    print("normal succ: {}, fuzzy succ: {}".format(normal_succ, fuzzy_succ))
-    with open('approx_guess_{}.json'.format(q), 'wb') as f:
-        json.dump(guess_list, f)
-    return guess_list
-
-# import dataset
-# def create_pw_db_(attacker_pwmodel, force=False):
-#     leakname = attacker_pwmodel._leak
-#     db = dataset.connect('sqlite:///{}.db'.format(leakname))
-#     if 'passwords' in db.tables and not force:
-#         return
-#     db['passwords'].drop()
-#     pwtab = db['passwords']
-#     pwm = HistPw(fname)
-#     s = time.time()
-#     pwtab.insert_many(dict(pw=pw, f=c) for pw, c in pwm.iterpasswords())
-#     e = time.time()
-#     print("Done inserting in {}s".format((e-s)/1e3))
-#     s = time.time()
-#     pwtab.create_index(pw)
-#     print("Done creating index in {}s".format((time.time()-s)/1e3))
-
-
-# def insert_typos_to_db(db):
-#     typotab = db['typos']
-#     for d in db.query('select pw, id from passwords limit PWLIMIT'):
-#         pw, id_ = d['pw'], d['id']
-#        apply_edits(pw)
-
-
 MIN_ENTROPY = 10
 REL_ENT_CUTOFF = -3
 EDIT_DIST_CUTOFF = 1
-MAX_NH_SIZE = 500
-N = int(1e6) # Number of rockyou password to consider
+MAX_NH_SIZE = 1000
+CACHE_SIZE = 5
+N = int(2e6) # Number of rockyou password to consider
 SPLIT = 10000
 Q = 10000
+def set_globals(settings_i):
+    # MIN_ENT, REL_ENT, MAX_NH_SIZE, CACHE_SIZE,
+    global MIN_ENTROPY, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
+    settings = [
+        (10, -3, 1000, 5, 10000),
+        (0, 0, 1000, 5, 10000),
+    ]
+    MIN_ENTROPY, REL_ENT, MAX_NH_SIZE, CACHE_SIZE, Q = settings[settings_i]
+
+
 def get_nh(w):
     """
     Find the neighborhood of a password w, also enforces the policies.
@@ -235,9 +66,10 @@ def get_nh(w):
         if tpw in done: return False
         done.add(tpw)
         tpw = str(tpw.encode('utf-8', errors='ignore'))
-        ent_tpw = entropy(tpw)
-        return (ent_tpw>=MIN_ENTROPY and
-                (ent_tpw-ent_w)>=REL_ENT_CUTOFF)
+        if MIN_ENTROPY != 0 and REL_ENT_CUTOFF != 0:
+            ent_tpw = entropy(tpw)
+            return (ent_tpw>=MIN_ENTROPY and
+                    (ent_tpw-ent_w)>=REL_ENT_CUTOFF)
     for tpw in KB.word_to_typos(str(w)):
         if not filter_(tpw): continue
         ret[i] = tpw
@@ -358,7 +190,7 @@ def create_pw_nh_graph(fname):
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
     split = SPLIT
     # N = 1000
-    pool = multiprocessing.Pool(5)
+    pool = multiprocessing.Pool(4)
     # Create with split 1000
     args = [(pwm, i, i+split) for i in xrange(0, N, split)]
     pool.map(create_part_pw_nh_graph, args)
@@ -651,21 +483,22 @@ if __name__ == '__main__':
     # approx_guesses(sys.argv[1], 1000)
     # greedy_maxcoverage_heap(sys.argv[1], 1000)
     fname = sys.argv[1]
-    # create_pw_nh_graph(fname)
+    set_globals(settings_i=1)
+    create_pw_nh_graph(fname)
     # print("Done creating all the graphs")
     # verify(fname)
-    q = Q
-    from multiprocessing import Process
-    process = {
-        'p_all':  Process(target=compute_guesses_all, args=(fname, q)),
-        'p_random': Process(target=compute_guesses_random, args=(fname, q)),
-        'p_typodist': Process(target=compute_guesses_using_typodist, args=(fname, q, 5)),
-        'p_typodist_topk': Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True))
-    }
-    process['p_typodist'].start()
-    # process['p_all'].start()
+    # q = Q
+    # from multiprocessing import Process
+    # process = {
+    #     'p_all':  Process(target=compute_guesses_all, args=(fname, q)),
+    #     'p_random': Process(target=compute_guesses_random, args=(fname, q)),
+    #     'p_typodist': Process(target=compute_guesses_using_typodist, args=(fname, q, 5)),
+    #     'p_typodist_topk': Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True))
+    # }
+    # process['p_typodist'].start()
+    # # process['p_all'].start()
 
-    process['p_typodist'].join()
+    # process['p_typodist'].join()
     #  process['p_all'].join()
     # for pname, proc in process.items():
     #     print("\n*** {} ***\n".format(pname.upper()))
