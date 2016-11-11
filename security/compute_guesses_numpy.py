@@ -46,12 +46,14 @@ Q = 1000
 
 def set_globals(settings_i):
     # MIN_ENT, REL_ENT, MAX_NH_SIZE, CACHE_SIZE,
-    global MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
+    global N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
     settings = [
-        (10, -1, 1000, 5, 10000),
-        (0, 0, 1000, 5, 10000),
+        (1e5, 10, -1, 1000, 5, 1000), # online w/ blacklist 
+        (1e5,  0,  0, 1000, 5, 1000), # online w/o blacklist 
+        (1e6, 10, -1, 1000, 5, 100000), # offline w/ blacklist 
+        (1e6,  0,  0, 1000, 5, 100000), # offline w/o blacklist 
     ]
-    MIN_ENTROPY_CUTOFF, REL_ENT, MAX_NH_SIZE, CACHE_SIZE, Q = settings[settings_i]
+    N, MIN_ENTROPY_CUTOFF, REL_ENT, MAX_NH_SIZE, CACHE_SIZE, Q = settings[settings_i]
 
 def get_nh(w):
     """
@@ -656,17 +658,17 @@ def verify(fname):
         if (i%100==0):
             print "Done {}".format(i)
 
-def run_all():
+def run_all(offline=False):
     pwleaks = ["/home/ubuntu/passwords/rockyou-withcount.txt.bz2",
                "/home/ubuntu/passwords/myspace-withcount.txt.bz2",
                "/home/ubuntu/passwords/phpbb-withcount.txt.bz2"]
     processes = []
     q = Q
     for fname in pwleaks:
-        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, False)))
-        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True)))
+        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, False, offline)))
+        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True, offline)))
     for p in processes: p.start()
-    for p in processes: p.join()
+    # for p in processes: p.join()
     return
         
 if __name__ == '__main__':
@@ -674,15 +676,21 @@ if __name__ == '__main__':
     # create_pw_db_(sys.argv[1])
     # approx_guesses(sys.argv[1], 1000)
     # greedy_maxcoverage_heap(sys.argv[1], 1000)
-    # set_globals(settings_i=0)
-    # run_all()
-
+    set_globals(settings_i=0)
+    run_all()
     set_globals(settings_i=1)
-    fname = sys.argv[1]
+    run_all()
+
+    set_globals(settings_i=2)
+    run_all(offline=True)
+    set_globals(settings_i=3)
+    run_all(offline=True)
+    # set_globals(settings_i=1)
+    # fname = sys.argv[1]
     # create_pw_nh_graph(fname)
     # print("Done creating all the graphs")
     # # verify(fname)
-    q = Q
+    # q = Q
     # process = {
     #     'p_all':  Process(target=compute_guesses_all, args=(fname, q)),
     #     'p_random': Process(target=compute_guesses_random, args=(fname, q)),
@@ -692,7 +700,7 @@ if __name__ == '__main__':
     # process['p_typodist'].start()
     # process['p_topk'].start()
     
-    compute_guesses_using_typodist(fname, q, 5, True, offline=True)
+    # compute_guesses_using_typodist(fname, q, 5, True, offline=True)
     # compute_guesses_using_typodist(fname, q, 10, False)
     # process['p_typodist'].join()
     # process['p_all'].join()
