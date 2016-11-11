@@ -48,10 +48,10 @@ def set_globals(settings_i):
     # MIN_ENT, REL_ENT, MAX_NH_SIZE, CACHE_SIZE,
     global N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
     settings = [
-        (1e5, 10, -1, 10, 5, 1000), # online w/ blacklist 
-        (1e4,  0,  0, 10, 10, 100), # online w/o blacklist 
-        (1e6, 10, -1, 10, 5, 100000), # offline w/ blacklist 
-        (1e6,  0,  0, 10, 5, 100000), # offline w/o blacklist 
+        (1e4, 10, -3, 10, 5, 1000), # online w/ blacklist 
+        (1e4,  0,  0, 10, 5, 1000), # online w/o blacklist 
+        (1e5, 10, -3, 10, 5, 10000), # offline w/ blacklist 
+        (1e5,  0,  0, 10, 5, 10000), # offline w/o blacklist 
     ]
     (N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q) = settings[settings_i]
     return settings[settings_i]
@@ -308,7 +308,6 @@ def read_pw_nh_graph(fname, q=-1):
 def get_topkcorr_typos(rpw, nh_size):
     add_at_end = '1`0/234'
     ret = [
-        rpw,
         rpw.swapcase(), rpw[1].lower()+rpw[1:],
         rpw[:-1] + num2sym.get(rpw[-1], rpw[-1]),
         rpw[0] + rpw,
@@ -329,10 +328,17 @@ def get_topkcorr_typos(rpw, nh_size):
         return (ent_tpw>=MIN_ENTROPY_CUTOFF and
                 (ent_tpw-ent_rpw)>=REL_ENT_CUTOFF)
     done = set()
-    ret = ret[:1] + [
-        tpw for tpw in ret[1:]
-        if (tpw not in done and done.add(tpw) and filter_(tpw))
-    ]
+    rret = ['' for _ in xrange(nh_size+1)]
+
+    rret[0] = rpw; done.add(rpw)
+    i = 1
+    for tpw in ret:
+        if tpw in done: continue
+        done.add(tpw)
+        if filter_(tpw):
+            rret[i] = tpw
+            i += 1
+            if i>= nh_size: break
     if len(ret)<nh_size+1:
         ret.extend(['']*(nh_size+1-len(ret)))
     return ret[:nh_size+1]
@@ -381,7 +387,7 @@ def _get_typos_for_typodist(pwm, q, nh_size, topk):
         # if any(M[:, 0] == pwid):
         #     print("{!r} is already considered".format(rpw))
         #     continue
-        if len(rpw)<4: continue
+        if len(rpw)<MIN_PASS_LEN: continue
         if topk:
             T = get_topkcorr_typos(rpw, nh_size)
         else:
@@ -427,7 +433,7 @@ def _read_typos(pwm, N, proc_name):
         rpw = typo_trie.restore_key(M[i, 0])
         f = pwm.pw2freq(rpw)
         rpw_ent = entropy(rpw)
-        assert f>0, "rpw={}, freq={}".format(rpw, f)
+        assert f>=0, "rpw={}, freq={}".format(rpw, f)
         for j in xrange(M.shape[1]):
             if M[i,j]<0: continue
             tpw = typo_trie.restore_key(M[i,j])
@@ -478,7 +484,7 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
         # Set of rows where gi exists
         killed_gi = B[gi]
         killed[killed_gi] = False if not offline else True
-        e = (typo_trie.restore_key(gi), A[gi]/pwm.totalf())
+        e = (typo_trie.restore_key(gi), A[gi]/float(pwm.totalf()))
         assert offline or (e not in guesses), "Guesses={}, e={}, killed_gi={}, M[killed_gi]={}"\
             .format(guesses, e, gi, M[killed_gi])
         if not guesses:
@@ -490,8 +496,10 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
         for ri in killed_gi:
             row = M[ri]
             f = pwm.pw2freq(typo_trie.restore_key(row[0]))
-            assert f>0, "RPW freq is zero! rpw={}, f={}, guess={}"\
-                .format(typo_trie[row[0]], f, typo_trie[gi])
+            if f<=0:
+                print("RPW freq is zero! rpw={}, f={}, guess={}"\
+                      .format(typo_trie.restore_key(row[0]), f, typo_trie.restore_key(gi)))
+                continue
             if offline:
                 if gi == row[0]:
                     killed[ri] = False
@@ -517,7 +525,7 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
     print("({}): Total fuzzy success: {}"\
           .format(proc_name, 100*fuzzlambda_q))
     print("({}): Total normal success: {}"\
-          .format(proc_name, 100*pwm.sumvalues(q)/pwm.totalf()))
+          .format(proc_name, 100*pwm.sumvalues(q)/float(pwm.totalf())))
     guess_f = 'guesses/{}_guesses_{}_typodist_{}_{}.json'\
               .format(pwm.fbasename, q, nh_size, proc_name)
     print("Saving the guesses:", guess_f)
@@ -615,7 +623,7 @@ def _comptue_fuzz_success(pwm, M, A, typo_trie, q):
             continue
         ### --
         killed[:r][killed_gi] = False
-        guesses.append((typo_trie.restore_key(gi), A[gi]/pwm.totalf()))
+        guesses.append((typo_trie.restore_key(gi), A[gi]/float(pwm.totalf())))
         for row in M[:r][killed_gi]:
             if row[0]>=0:
                 A[row] -= pwm.pw2freq(get_trie_key(typo_trie, row[0]))
@@ -634,7 +642,7 @@ def _comptue_fuzz_success(pwm, M, A, typo_trie, q):
     print("({}): Total fuzzy success: {}"\
           .format(proc_name, 100*sum(g[1] for g in guesses)))
     print("({}): Total normal success: {}"\
-          .format(proc_name, 100*pwm.sumvalues(q)/pwm.totalf()))
+          .format(proc_name, 100*pwm.sumvalues(q)/float(pwm.totalf())))
     return guesses
 
 import random
@@ -679,15 +687,16 @@ if __name__ == '__main__':
     # create_pw_db_(sys.argv[1])
     # approx_guesses(sys.argv[1], 1000)
     # greedy_maxcoverage_heap(sys.argv[1], 1000)
+    set_globals(settings_i=0)
+    run_all()
     set_globals(settings_i=1)
     run_all()
-    # set_globals(settings_i=1)
-    # run_all()
 
-    # set_globals(settings_i=2)
-    # run_all(offline=True)
-    # set_globals(settings_i=3)
-    # run_all(offline=True)
+    set_globals(settings_i=2)
+    run_all(offline=True)
+    set_globals(settings_i=3)
+    run_all(offline=True)
+
     # set_globals(settings_i=1)
     # fname = sys.argv[1]
     # create_pw_nh_graph(fname)
