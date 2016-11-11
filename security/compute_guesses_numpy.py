@@ -39,7 +39,7 @@ MIN_ENTROPY_CUTOFF = 10
 REL_ENT_CUTOFF = -3
 EDIT_DIST_CUTOFF = 1
 MAX_NH_SIZE = 1000
-CACHE_SIZE = 5
+CACHE_SIZE = 10
 N = int(1e6) # Number of rockyou password to consider
 SPLIT = 10000
 Q = 1000
@@ -48,12 +48,14 @@ def set_globals(settings_i):
     # MIN_ENT, REL_ENT, MAX_NH_SIZE, CACHE_SIZE,
     global N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
     settings = [
-        (1e5, 10, -1, 1000, 5, 1000), # online w/ blacklist 
-        (1e5,  0,  0, 1000, 5, 1000), # online w/o blacklist 
-        (1e6, 10, -1, 1000, 5, 100000), # offline w/ blacklist 
-        (1e6,  0,  0, 1000, 5, 100000), # offline w/o blacklist 
+        (1e5, 10, -1, 10, 5, 1000), # online w/ blacklist 
+        (1e4,  0,  0, 10, 10, 100), # online w/o blacklist 
+        (1e6, 10, -1, 10, 5, 100000), # offline w/ blacklist 
+        (1e6,  0,  0, 10, 5, 100000), # offline w/o blacklist 
     ]
-    N, MIN_ENTROPY_CUTOFF, REL_ENT, MAX_NH_SIZE, CACHE_SIZE, Q = settings[settings_i]
+    (N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q) = settings[settings_i]
+    return settings[settings_i]
+
 
 def get_nh(w):
     """
@@ -389,7 +391,7 @@ def _get_typos_for_typodist(pwm, q, nh_size, topk):
             for tpw in T
         ]
         if (i>0 and i%1000==0):
-            print("Processed: {}".format(i))
+            print("({}) Processed: {}".format(proc_name, i))
         i += 1
 
     # A = A[A>0]
@@ -445,6 +447,7 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
     """
     # Re-create the neighborhood, it should be small
     global proc_name, N
+    print(N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, nh_size)
     if topk:
         proc_name = "TOPKTypo-{}-{}-{}".format
     else:
@@ -661,12 +664,12 @@ def verify(fname):
 def run_all(offline=False):
     pwleaks = ["/home/ubuntu/passwords/rockyou-withcount.txt.bz2",
                "/home/ubuntu/passwords/myspace-withcount.txt.bz2",
-               "/home/ubuntu/passwords/phpbb-withcount.txt.bz2"]
+               "/home/ubuntu/passwords/phpbb-withcount.txt.bz2"][:1]
     processes = []
     q = Q
     for fname in pwleaks:
-        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, False, offline)))
-        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True, offline)))
+        # processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, 5, False, offline)))
+        processes.append(Process(target=compute_guesses_using_typodist, args=(fname, q, CACHE_SIZE, True, offline)))
     for p in processes: p.start()
     # for p in processes: p.join()
     return
@@ -676,15 +679,15 @@ if __name__ == '__main__':
     # create_pw_db_(sys.argv[1])
     # approx_guesses(sys.argv[1], 1000)
     # greedy_maxcoverage_heap(sys.argv[1], 1000)
-    set_globals(settings_i=0)
-    run_all()
     set_globals(settings_i=1)
     run_all()
+    # set_globals(settings_i=1)
+    # run_all()
 
-    set_globals(settings_i=2)
-    run_all(offline=True)
-    set_globals(settings_i=3)
-    run_all(offline=True)
+    # set_globals(settings_i=2)
+    # run_all(offline=True)
+    # set_globals(settings_i=3)
+    # run_all(offline=True)
     # set_globals(settings_i=1)
     # fname = sys.argv[1]
     # create_pw_nh_graph(fname)
