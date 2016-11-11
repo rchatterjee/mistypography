@@ -41,13 +41,14 @@ MAX_NH_SIZE = 1000
 CACHE_SIZE = 5
 N = int(1e6) # Number of rockyou password to consider
 SPLIT = 10000
-Q = 10000
+Q = 1000
+
 def set_globals(settings_i):
     # MIN_ENT, REL_ENT, MAX_NH_SIZE, CACHE_SIZE,
     global MIN_ENTROPY, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
     settings = [
-        (10, -3, 1000, 5, 10000),
-        (0, 0, 1000, 5, 10000),
+        (10, -3, 1000, 5, 100),
+        (0, 0, 1000, 5, 1000),
     ]
     MIN_ENTROPY, REL_ENT, MAX_NH_SIZE, CACHE_SIZE, Q = settings[settings_i]
 
@@ -96,6 +97,8 @@ import marisa_trie
 def create_part_pw_nh_graph(args):
     pwm, s, e = args
     assert e>s
+    if len(pwm)<s: return
+    e = min(len(pwm), e)
     typodir = '{}/typodir'.format(pwd)
     tpw_trie_fname = '{}/{}__{}_{}_typo.trie'.format(typodir, pwm.fbasename, s, e)
     rpw_nh_graph = '{}/{}__{}_{}_rpw_nh_graph.npz'.format(typodir, pwm.fbasename, s, e)
@@ -142,6 +145,7 @@ def create_part_pw_nh_graph(args):
     print("Average NH size: {}".format(average_nh_size/float(k)))
     return
 
+
 M = None
 def _update_M(global_typo_trie, trie_i, tM):
     A = np.zeros(len(trie_i))
@@ -151,8 +155,12 @@ def _update_M(global_typo_trie, trie_i, tM):
         tM[i] = A[tM[i]]
     return tM
 
+
 def join_pw_nh_graphs(args):
     pwm, split, s, e = args
+    if s > len(pwm):
+        return
+    e = min(e, len(pwm))
     typodir = '{}/typodir'.format(pwd)
     tpw_trie_fname = '{}/{}__{{}}_{{}}_typo.trie'.format(typodir, pwm.fbasename)
     rpw_nh_graph = '{}/{}__{{}}_{{}}_rpw_nh_graph.npz'.format(typodir, pwm.fbasename)
@@ -174,6 +182,8 @@ def join_pw_nh_graphs(args):
     M = np.full((N, MAX_NH_SIZE+1), fill_value=-1, dtype=int)
     for i in xrange(0, N, split):
         ts, te = i+s, i+s+split
+        if ts>len(pwm): continue
+        te = min(te, len(pwm))
         typo_trie = marisa_trie.Trie()
         typo_trie.load(tpw_trie_fname.format(ts, te))
         tries.append(typo_trie)
@@ -208,6 +218,7 @@ def join_pw_nh_graphs(args):
     global_typo_trie.save(joined_tpw_trie_fname)
     print("Done!")
 
+
 def create_pw_nh_graph(fname):
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
     split = SPLIT
@@ -225,12 +236,12 @@ def create_pw_nh_graph(fname):
         args1 = [(pwm, split, i, i+split*100) for i in xrange(0, N, split*100)]
         pool.map(join_pw_nh_graphs, args1)
         join_pw_nh_graphs((pwm, split*100, 0, N))
-
     # while split < N:
     #     args = [(pwm, split, i, i+split*multiplier)
     #             for i in xrange(0, N, split*multiplier)]
     #     pool.map(join_pw_nh_graphs, args)
     #     split *= multiplier
+
 
 def read_pw_nh_graph(fname, q=-1):
     """Reads the typo trie file and the neighborhood map created by
@@ -253,8 +264,10 @@ def read_pw_nh_graph(fname, q=-1):
        most likely useless. Where assume the average ball size is 10.
     """
     # N = 1000
+    global N
     typodir = '{}/typodir'.format(pwd)
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
+    N = min(N, len(pwm))
     tpw_trie_fname = '{}/{}__{}_{}_typo.trie'\
                      .format(typodir, pwm.fbasename, 0, N)
     rpw_nh_graph = '{}/{}__{}_{}_rpw_nh_graph.npz'\
@@ -286,28 +299,46 @@ def read_pw_nh_graph(fname, q=-1):
     # ))
     return M, A, typo_trie, pwm
 
-def get_topk_typos(rpw, nh_size):
+
+def get_topkcorr_typos(rpw, nh_size):
     add_at_end = ['1`0/234']
     ret = [
-        rpw.swapcase(), rpw[1].lower()+row[1:],
+        rpw,
+        rpw.swapcase(), rpw[1].lower()+rpw[1:],
         rpw[:-1] + num2sym.get(rpw[-1], rpw[-1]),
         rpw[0] + rpw,
     ]
-    ret.extend((rpw + c for c in add_at_end))
-    return ret
+    if len(ret)<=2*nh_size:
+        ret.extend((rpw + c for c in add_at_end))
+        ret.extend((c + rpw for c in add_at_end))
+
+    if len(ret)<=2*nh_size:
+        ret.extend((rpw[:-1], rpw[1:]))
+        ret.extend(
+            rpw[:i] + rpw[i].swapcase() + rpw[i+1:]
+            for i in xrange(1, len(rpw))
+        )
+    ent_rpw = entropy(rpw)
+    def filter_(tpw):
+        ent_tpw = entropy(tpw)
+        return (ent_tpw>=MIN_ENTROPY and
+                (ent_tpw-ent_rpw)>=REL_ENT_CUTOFF)
+        
+    ret = [tpw for tpw in set(ret) if filter_(tpw)]
+    if len(ret)<nh_size+1:
+        ret.extend(['']*(nh_size+1-len(ret)))
+    return ret[:nh_size+1]
 
 
-def get_typodist_nh(rpw, nh_size, topk=True):
+def get_typodist_nh(rpw, nh_size):
     ent_rpw = entropy(rpw)
     ret = ['' for _ in range(nh_size+1)]
     ret[0] = rpw
     done = set([rpw])
     i = 1
-    if topk:
-        typos = get_topk_typos(rpw, 2*nh_size)
-    else:
-        assert 0, "Useless process. Run with topk=True"
-        typos = sample_typos(rpw, 2*nh_size)
+    typos = get_topk_typos(rpw, 2*nh_size)
+    # assert 0, "Useless process. Run with topk=True"
+    # typos = sample_typos(rpw, 2*nh_size)
     for tpw in typos:
         if tpw in done: continue
         done.add(tpw)
@@ -326,9 +357,9 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False):
     # Re-create the neighborhood, it should be small
     global proc_name
     if topk:
-        proc_name = "TYPODIST-TOPK"
+        proc_name = "TYPODIST-TOPKCorr"
     else:
-        proc_name = "TYPODIST"
+        proc_name = "TYPODIST-TOPK"
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
     typos = OrderedDict()
     def get_typo_id(_typo):
@@ -354,7 +385,10 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False):
         #     print("{!r} is already considered".format(rpw))
         #     continue
         if len(rpw)<4: continue
-        T = get_typodist_nh(rpw, nh_size, topk)
+        if topk:
+            T = get_topkcorr_typos(rpw, nh_size)
+        else:
+            T = get_typodist_nh(rpw, nh_size)
         M[i] = [
             get_typo_id(tpw)
             for tpw in T
@@ -404,8 +438,10 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False):
           .format(proc_name, 100*pwm.sumvalues(q)/pwm.totalf()))
     guess_f = 'guesses/{}_guesses_{}_typodist_{}_{}.json'\
               .format(pwm.fbasename, q, nh_size, proc_name)
+    print("Saving the guesses:", guess_f)
     with open(guess_f, 'w') as f:
         json.dumps(guesses, f, indent=4)
+
 
 def compute_guesses_random(fname, q, k=5):
     """
@@ -459,14 +495,15 @@ def _comptue_fuzz_success(pwm, M, A, typo_trie, q):
     killed = np.ones(M.shape[0], dtype=bool)
     guesses = []
     i = 0
-    B = np.array(A.shape[0], dtype=bool)
+    B = np.zeros(A.shape[0], dtype=int)
+    print(B.shape, A.shape)
     for r in xrange(M.shape[0]):
-        t = M[r]
-        B[t][B[t]<r] = r
+        B[M[r, :]] = r
 
     while len(guesses)<q:
         gi = A.argmax()
         # Set of rows where gi exists
+        r = B[gi]
         killed_gi = ((M[:r]==gi).sum(axis=1))>0
         killed[killed_gi] = False
         guesses.append((typo_trie.restore_key(gi), A[gi]/pwm.totalf()))
@@ -521,23 +558,25 @@ if __name__ == '__main__':
     # approx_guesses(sys.argv[1], 1000)
     # greedy_maxcoverage_heap(sys.argv[1], 1000)
     fname = sys.argv[1]
-    set_globals(settings_i=1)
-    create_pw_nh_graph(fname)
-    print("Done creating all the graphs")
-    # verify(fname)
+    set_globals(settings_i=0)
+    # create_pw_nh_graph(fname)
+    # print("Done creating all the graphs")
+    # # verify(fname)
     q = Q
     # from multiprocessing import Process
-    process = {
-        'p_all':  Process(target=compute_guesses_all, args=(fname, q)),
-        'p_random': Process(target=compute_guesses_random, args=(fname, q)),
-        'p_typodist': Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True)),
-        'p_topk': Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True))
-    }
-    process['p_typodist'].start()
-    process['p_topk'].start()
-
-    process['p_typodist'].join()
-    process['p_all'].join()
+    # process = {
+    #     'p_all':  Process(target=compute_guesses_all, args=(fname, q)),
+    #     'p_random': Process(target=compute_guesses_random, args=(fname, q)),
+    #     'p_typodist': Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True)),
+    #     'p_topk': Process(target=compute_guesses_using_typodist, args=(fname, q, 5, True))
+    # }
+    # process['p_typodist'].start()
+    # process['p_topk'].start()
+    
+    # compute_guesses_using_typodist(fname, q, 5, True)
+    compute_guesses_all(fname, q)
+    # process['p_typodist'].join()
+    # process['p_all'].join()
 
     # for pname, proc in process.items():
     #     print("\n*** {} ***\n".format(pname.upper()))
