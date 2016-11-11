@@ -302,7 +302,7 @@ def read_pw_nh_graph(fname, q=-1):
 
 
 def get_topkcorr_typos(rpw, nh_size):
-    add_at_end = ['1`0/234']
+    add_at_end = '1`0/234'
     ret = [
         rpw,
         rpw.swapcase(), rpw[1].lower()+rpw[1:],
@@ -324,8 +324,11 @@ def get_topkcorr_typos(rpw, nh_size):
         ent_tpw = entropy(tpw)
         return (ent_tpw>=MIN_ENTROPY_CUTOFF and
                 (ent_tpw-ent_rpw)>=REL_ENT_CUTOFF)
-        
-    ret = [tpw for tpw in set(ret) if filter_(tpw)]
+    done = set()
+    ret = ret[:1] + [
+        tpw for tpw in ret[1:]
+        if (tpw not in done and done.add(tpw) and filter_(tpw))
+    ]
     if len(ret)<nh_size+1:
         ret.extend(['']*(nh_size+1-len(ret)))
     return ret[:nh_size+1]
@@ -380,13 +383,13 @@ def _get_typos_for_typodist(pwm, q, nh_size, topk):
         else:
             T = get_typodist_nh(rpw, nh_size)
         M[i] = [
-            get_typo_id(tpw)
+            get_typo_id(tpw) if tpw else -1
             for tpw in T
         ]
         if (i>0 and i%1000==0):
             print("Processed: {}".format(i))
         i += 1
-    
+
     # A = A[A>0]
     # typo_trie = marisa_trie.Trie(typos.keys())
     # assert A.shape[0] == len(typos)
@@ -398,9 +401,10 @@ def _get_typos_for_typodist(pwm, q, nh_size, topk):
         f = pwm.pw2freq(typos[M[i, 0]])
         for j in xrange(M.shape[1]):
             o = M[i, j]
+            if o<0: continue
             M[i, j] = typo_trie.key_id(unicode(typos[o]))
             B[M[i, j]].append(i)
-            A[M[i,j]] += f
+            A[M[i, j]] += f
 
     return M, B, A, typo_trie
 
@@ -419,8 +423,9 @@ def _read_typos(pwm, N, proc_name):
         rpw = typo_trie.restore_key(M[i, 0])
         f = pwm.pw2freq(rpw)
         rpw_ent = entropy(rpw)
-        assert f>0
+        assert f>0, "rpw={}, freq={}".format(rpw, f)
         for j in xrange(M.shape[1]):
+            if M[i,j]<0: continue
             tpw = typo_trie.restore_key(M[i,j])
             tpw_ent = entropy(tpw)
             if (MIN_ENTROPY_CUTOFF>0 and tpw_ent < MIN_ENTROPY_CUTOFF) \
@@ -439,10 +444,12 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
     # Re-create the neighborhood, it should be small
     global proc_name, N
     if topk:
-        proc_name = "TOPKTypo-{}-{}".format
+        proc_name = "TOPKTypo-{}-{}-{}".format
     else:
-        proc_name = "TYPODIST-{}-{}".format
-    proc_name = proc_name(MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF)
+        proc_name = "TYPODIST-{}-{}-{}".format
+    proc_name = proc_name(MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, 
+                          ('off' if offline else 'on'))
+
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
     typodir = '{}/typodir'.format(pwd)
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
@@ -467,23 +474,25 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
         killed_gi = B[gi]
         killed[killed_gi] = False if not offline else True
         e = (typo_trie.restore_key(gi), A[gi]/pwm.totalf())
-        assert e not in guesses, "Guesses={}, e={}, killed_gi={}, M[killed_gi]={}"\
+        assert offline or (e not in guesses), "Guesses={}, e={}, killed_gi={}, M[killed_gi]={}"\
             .format(guesses, e, gi, M[killed_gi])
         if not guesses:
-            print "{} -> {}".format(e[0],
-                                    [typo_trie.restore_key(c)
-                                     for c in M[killed_gi, 0]])
+            print "gi={}, {} -> {} ({}), "\
+                .format(gi, e[0], len(B[gi]),
+                        [typo_trie.restore_key(c)
+                         for c in M[killed_gi, 0]])
         guesses.append(e)
-        for row in M[killed_gi]:
+        for ri in killed_gi:
+            row = M[ri]
             f = pwm.pw2freq(typo_trie.restore_key(row[0]))
             assert f>0, "RPW freq is zero! rpw={}, f={}, guess={}"\
                 .format(typo_trie[row[0]], f, typo_trie[gi])
             if offline:
-                # if gi == row[0]:
-                #     killed[gi] = False
-                #     A[gi] = 0
-                # else:
-                pass    
+                if gi == row[0]:
+                    killed[ri] = False
+                    A[gi] = 0
+                else:
+                    A[gi] -= f/float(nh_size)
             else:
                 A[row] -= f
         print("({}): {}> {:30s}: {:.3e} (killed={}/{})".format(
@@ -665,16 +674,15 @@ if __name__ == '__main__':
     # create_pw_db_(sys.argv[1])
     # approx_guesses(sys.argv[1], 1000)
     # greedy_maxcoverage_heap(sys.argv[1], 1000)
-    set_globals(settings_i=0)
-    run_all()
+    # set_globals(settings_i=0)
+    # run_all()
 
     set_globals(settings_i=1)
-    run_all()
-    # fname = sys.argv[1]
+    fname = sys.argv[1]
     # create_pw_nh_graph(fname)
     # print("Done creating all the graphs")
     # # verify(fname)
-    # q = Q
+    q = Q
     # process = {
     #     'p_all':  Process(target=compute_guesses_all, args=(fname, q)),
     #     'p_random': Process(target=compute_guesses_random, args=(fname, q)),
@@ -684,7 +692,7 @@ if __name__ == '__main__':
     # process['p_typodist'].start()
     # process['p_topk'].start()
     
-    # compute_guesses_using_typodist(fname, q, 5, True)
+    compute_guesses_using_typodist(fname, q, 5, True, offline=True)
     # compute_guesses_using_typodist(fname, q, 10, False)
     # process['p_typodist'].join()
     # process['p_all'].join()
