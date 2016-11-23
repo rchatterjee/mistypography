@@ -48,10 +48,10 @@ def set_globals(settings_i):
     # MIN_ENT, REL_ENT, MAX_NH_SIZE, CACHE_SIZE,
     global N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q
     settings = [
-        (1e4, 10, -3, 10, 5, 1000), # online w/ blacklist 
-        (1e4,  0,  0, 10, 5, 1000), # online w/o blacklist 
-        (1e5, 10, -3, 10, 5, 10000), # offline w/ blacklist 
-        (1e5,  0,  0, 10, 5, 10000), # offline w/o blacklist 
+        (1e4, 10, -3, 10, 5, 1000), # online w/ blacklist
+        (1e4,  0,  0, 10, 5, 1000), # online w/o blacklist
+        (1e5, 10, -3, 10, 5, 10000), # offline w/ blacklist
+        (1e5,  0,  0, 10, 5, 10000), # offline w/o blacklist
     ]
     (N, MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, MAX_NH_SIZE, CACHE_SIZE, Q) = settings[settings_i]
     return settings[settings_i]
@@ -248,7 +248,7 @@ def create_pw_nh_graph(fname):
     #     split *= multiplier
 
 
-def read_pw_nh_graph(fname, q=-1):
+def read_pw_nh_graph(fname, q=-1, _N=-1):
     """Reads the typo trie file and the neighborhood map created by
     `create_pw_nh_graph` function.
 
@@ -270,6 +270,8 @@ def read_pw_nh_graph(fname, q=-1):
     """
     # N = 1000
     global N
+    if _N>0:
+        N = _N
     typodir = '{}/typodir'.format(pwd)
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
     N = min(N, len(pwm))
@@ -458,7 +460,7 @@ def compute_guesses_using_typodist(fname, q, nh_size=5, topk=False, offline=Fals
         proc_name = "TOPKTypo-{}-{}-{}".format
     else:
         proc_name = "TYPODIST-{}-{}-{}".format
-    proc_name = proc_name(MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF, 
+    proc_name = proc_name(MIN_ENTROPY_CUTOFF, REL_ENT_CUTOFF,
                           ('off' if offline else 'on'))
 
     pwm = Passwords(fname, max_pass_len=25, min_pass_len=5)
@@ -565,7 +567,12 @@ def get_trie_key(T, _id):
         return T.restore_key(_id)
     except KeyError:
         return ''
-    
+def get_trie_id(T, key):
+    try:
+        return T.key_id(unicode(key))
+    except KeyError:
+        return -1
+
 proc_name = 'ALL'
 def compute_guesses_all(fname, q):
     """We computed neighborhood graph, considering the neighborhood graph
@@ -681,7 +688,7 @@ def run_all(offline=False):
     for p in processes: p.start()
     # for p in processes: p.join()
     return
-        
+
 if __name__ == '__main__':
     import sys
     # create_pw_db_(sys.argv[1])
@@ -711,7 +718,7 @@ if __name__ == '__main__':
     # }
     # process['p_typodist'].start()
     # process['p_topk'].start()
-    
+
     # compute_guesses_using_typodist(fname, q, 5, True, offline=True)
     # compute_guesses_using_typodist(fname, q, 10, False)
     # process['p_typodist'].join()

@@ -1,5 +1,5 @@
 (10000.0, 10, -3, 5)
-gi=2386, aASSWORD -> 1 ([u'password']), 
+gi=2386, aASSWORD -> 1 ([u'password']),
 (TOPKTypo-10--3-on): 1> aASSWORD                      : 1.825e-01 (killed=1/1)
 (TOPKTypo-10--3-on): 2> lLOVEYOU                      : 1.533e-01 (killed=1/2)
 (TOPKTypo-10--3-on): 3> rRINCESS                      : 1.022e-01 (killed=1/3)
@@ -988,7 +988,7 @@ RPW freq is zero! rpw=jESUS1, f=0, guess=eesus1
 (TOPKTypo-10--3-on): 982> eeyore                        : 3.192e-04 (killed=2/1298)
 (TOPKTypo-10--3-on): 983> aariel                        : 3.192e-04 (killed=2/1300)
 (TOPKTypo-10--3-on): 984> eeresa                      (10000.0, 0, 0, 5)
-gi=52654, 1123456 -> 15 ([u'123456', u'0123456', u'A123456', u'J123456', u'M123456', u'S123456', u'K123456', u'B123456', u'D123456', u'C123456', u'T123456', u'R123456', u'L123456', u'E123456', u'a123456']), 
+gi=52654, 1123456 -> 15 ([u'123456', u'0123456', u'A123456', u'J123456', u'M123456', u'S123456', u'K123456', u'B123456', u'D123456', u'C123456', u'T123456', u'R123456', u'L123456', u'E123456', u'a123456']),
 (TOPKTypo-0-0-on): 1> 1123456                       : 9.064e-01 (killed=15/15)
 (TOPKTypo-0-0-on): 2> 112345                        : 2.485e-01 (killed=10/25)
 (TOPKTypo-0-0-on): 3> 1123456789                    : 2.462e-01 (killed=3/28)
@@ -2246,7 +2246,7 @@ Pwid changed for u'CONTRASE\xd1A' -> 'CONTRASEA'
 (TOPKTypo-10--3-off) Processed: 97000
 (TOPKTypo-10--3-off) Processed: 98000
 (TOPKTypo-10--3-off) Processed: 99000
-gi=276748, 1123456 -> 38 ([u'123456', u'0123456', u'A123456', u'J123456', u'M123456', u'S123456', u'K123456', u'B123456', u'D123456', u'C123456', u'T123456', u'R123456', u'L123456', u'E123456', u'a123456', u'N123456', u'P123456', u'H123456', u'Q123456', u'G123456', u'1123456', u'1123456', u'V123456', u'F123456', u'Z123456', u'j123456', u'W123456', u'I123456', u'Y123456', u'O123456', u'k123456', u'm123456', u's123456', u'c123456', u'X123456', u'd123456', u'`123456', u'l123456']), 
+gi=276748, 1123456 -> 38 ([u'123456', u'0123456', u'A123456', u'J123456', u'M123456', u'S123456', u'K123456', u'B123456', u'D123456', u'C123456', u'T123456', u'R123456', u'L123456', u'E123456', u'a123456', u'N123456', u'P123456', u'H123456', u'Q123456', u'G123456', u'1123456', u'1123456', u'V123456', u'F123456', u'Z123456', u'j123456', u'W123456', u'I123456', u'Y123456', u'O123456', u'k123456', u'm123456', u's123456', u'c123456', u'X123456', u'd123456', u'`123456', u'l123456']),
 (TOPKTypo-10--3-off): 1> 1123456                       : 9.154e-01 (killed=38/1)
 (TOPKTypo-10--3-off): 2> 223456                        : 8.937e-01 (killed=5/2)
 (TOPKTypo-10--3-off): 3> 1234561                       : 8.927e-01 (killed=2/3)
@@ -8393,7 +8393,7 @@ Pwid changed for u'CONTRASE\xd1A' -> 'CONTRASEA'
 (TOPKTypo-0-0-off) Processed: 97000
 (TOPKTypo-0-0-off) Processed: 98000
 (TOPKTypo-0-0-off) Processed: 99000
-gi=276748, 1123456 -> 38 ([u'123456', u'0123456', u'A123456', u'J123456', u'M123456', u'S123456', u'K123456', u'B123456', u'D123456', u'C123456', u'T123456', u'R123456', u'L123456', u'E123456', u'a123456', u'N123456', u'P123456', u'H123456', u'Q123456', u'G123456', u'1123456', u'1123456', u'V123456', u'F123456', u'Z123456', u'j123456', u'W123456', u'I123456', u'Y123456', u'O123456', u'k123456', u'm123456', u's123456', u'c123456', u'X123456', u'd123456', u'`123456', u'l123456']), 
+gi=276748, 1123456 -> 38 ([u'123456', u'0123456', u'A123456', u'J123456', u'M123456', u'S123456', u'K123456', u'B123456', u'D123456', u'C123456', u'T123456', u'R123456', u'L123456', u'E123456', u'a123456', u'N123456', u'P123456', u'H123456', u'Q123456', u'G123456', u'1123456', u'1123456', u'V123456', u'F123456', u'Z123456', u'j123456', u'W123456', u'I123456', u'Y123456', u'O123456', u'k123456', u'm123456', u's123456', u'c123456', u'X123456', u'd123456', u'`123456', u'l123456']),
 (TOPKTypo-0-0-off): 1> 1123456                       : 9.154e-01 (killed=38/1)
 (TOPKTypo-0-0-off): 2> 223456                        : 8.937e-01 (killed=5/2)
 (TOPKTypo-0-0-off): 3> 1234561                       : 8.927e-01 (killed=2/3)
@@ -22387,3 +22387,5 @@ RPW freq is zero! rpw=JJAMES, f=0, guess=JJAMES
 (TOPKTypo-0-0-off): Total fuzzy success: 115.734034382
 (TOPKTypo-0-0-off): Total normal success: 22.2971362259
 ('Saving the guesses:', 'guesses/rockyou-withcount_guesses_10000_typodist_5_TOPKTypo-0-0-off.json')
+Done creating all the parts
+rockyou-withcount__0_2000000_typo.trie and rockyou-withcount__0_2000000_typo.trie exits. So returning
