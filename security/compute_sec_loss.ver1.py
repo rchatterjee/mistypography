@@ -163,7 +163,11 @@ def compute_guesses_and_success_rate(checker, q, real_pwm_f):
     for tq in [10, 100, 1000]:
         if tq>q:
             continue
-        ball = typofixer.get_ball_union(typo_guesses[:tq])
+        ball = set()
+        for guess in typo_guesses[:tq]:
+            guesses = typofixer.check(guess)
+            for pw in guesses:
+                ball.add(pw)
         # print "Passwords that are not queried:", set(normal_guesses[:tq]) - ball
         # print "New passwords that will be compromised:", ball - set(normal_guesses[:tq])
         lambda_q = totprob(normal_guesses[:tq])
