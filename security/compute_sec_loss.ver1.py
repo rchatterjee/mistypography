@@ -134,14 +134,13 @@ from pwmodel import HistPw
 from typofixer.checker import Checker, BUILT_IN_CHECKERS
 OUTPUT_f = "guesslist-{}.json"
 
-def compute_guesses_and_success_rate(checker, q, real_pwm_f):
+def compute_guesses_and_success_rate(checker, q, passwordFile, attackerFile):
     q = int(q)
-    pwm = HistPw(real_pwm_f)
+    pwm = HistPw(passwordFile)
     ######################## Parameters #######################
-    attacker_pwmodel = HistPw(os.path.expanduser('~/passwords/rockyou-withcount.txt.bz2'))
+    attacker_pwmodel = HistPw(os.path.expanduser(attackerFile))
     typofixer = BUILT_IN_CHECKERS[checker]
-    params = '{}-{}'.format(checker, q) # attacker's pw dist is always have
-                                        # rockyou
+    params = '{}-{}'.format(checker, q) # attacker's pw dist is always rockyou
     ############################################################
     global OUTPUT_f
     OUTPUT_f = OUTPUT_f.format(params)
@@ -225,10 +224,12 @@ You need to provide 3 things: a checker, a value of 'q', and a filename for real
 e.g.: $ python {} ChkBl_Top3 10 ~/passwrods/rockyou-withcount.txt.bz2\n""".format(__file__) )
         exit(1)
     else:
-        q = int(sys.argv[2])
         chker = sys.argv[1]
+        q = int(sys.argv[2])
+        passwordFile = sys.argv[3]
+        attackerFile = sys.argv[4]
         if chker not in BUILT_IN_CHECKERS:
             print("Your cheker ({}) is not in my list. Please use one of the following.".format(chker))
             print(BUILT_IN_CHECKERS.keys())
             exit(2)
-        compute_guesses_and_success_rate(chker, q, sys.argv[3])
+        compute_guesses_and_success_rate(chker, q, passwordFile, attackerFile)
