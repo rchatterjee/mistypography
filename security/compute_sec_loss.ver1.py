@@ -44,12 +44,9 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
 
     subset_heap = priority_dict()
     b = typofixer.max_ball_size  # ball size
-    n = typofixer.max_nh_size    # neighborhood size
     pwlist = attacker_pwmodel.iterpasswords()
     guess_list = []
-    tpw_done = set()  # to make the probabiltiy zero,
     l = 0
-    estimated_ball_weight = 0.0
     normal_guesses = []
     def totp(l):
         return sum(attacker_pwmodel.prob(pw) for pw in l)
@@ -61,9 +58,6 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
         if len(normal_guesses)<q:
             normal_guesses.append(rpw)
         p = attacker_pwmodel.prob(rpw)
-        if estimated_ball_weight <= 0:
-            # The weight of the heaviest ball in rpw's neighbor
-            estimated_ball_weight = p * b()
         # if subset heap is not empty, take out the heaviest ball in it
         if subset_heap:
             [tpw, weight] = subset_heap.pop_smallest()
@@ -79,7 +73,6 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
                               list((typofixer.check(tpw)|set([tpw])) - rpw_done)[:10],
                               power(tpw)))
                 guess_list.append(tpw)
-                tpw_done.add(tpw)
                 new_killed = (typofixer.check(tpw) | set([tpw])) - rpw_done
                 rpw_done |= new_killed
 
@@ -97,7 +90,7 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
                 else:
                     break;
 
-            if tpw and weight > 0 and tpw not in subset_heap and tpw not in tpw_done:
+            if tpw and weight > 0 and tpw not in subset_heap and tpw not in guess_list:
                 # assert tpw not in subset_heap
                 subset_heap[tpw] = -weight
 
@@ -105,7 +98,7 @@ def greedy_maxcoverage_heap(attacker_pwmodel, typofixer, q=100):
         # all the neighbors including itself
         # if it is not already dead or in the heap
         all_nhs = [ttpw for ttpw in typofixer.get_nh(rpw) | set([rpw])
-                   if (ttpw not in subset_heap) and (ttpw not in tpw_done)]
+                   if (ttpw not in subset_heap) and (ttpw not in guess_list)]
         # weights = [power(ttpw) for ttpw in all_nhs]
         with joblib.Parallel(n_jobs=7) as parallel:
             weights = parallel(
@@ -172,48 +165,10 @@ def compute_guesses_and_success_rate(checker, q, real_pwm_f):
         # print "New passwords that will be compromised:", ball - set(normal_guesses[:tq])
         lambda_q = totprob(normal_guesses[:tq])
         lambda_tilde_q = totprob(ball)
+        # print(normal_guesses[:tq])
+        # print(ball)
         print("{:5d}, {:-9.5f}, {:-13.5f}, {:-8.5f}" \
             .format(tq, lambda_q, lambda_tilde_q, (lambda_tilde_q - lambda_q)))
-
-
-def test_success_rate(real_pwm_f):
-    pwm = HistPw(real_pwm_f)
-    attacker_pwmodel = HistPw(os.path.expanduser('~/passwords/rockyou-withcount.txt.bz2'))
-    Q = [10, 100, 1000]
-    typofixer = BUILT_IN_CHECKERS['ChkBl_Top3']
-    tpw_data = json.load(open('coverage.log'))['guesslist'][:max(Q)]
-    tpwlist, tpwp_ = zip(*tpw_data)
-    print("Num guesses: {}, Total prob covered: {}".format(len(tpwp_), sum(tpwp_)))
-
-    def totprob(l):
-        return sum(pwm.prob(pw) for pw in l)
-
-    normal_guesses = [pw for pw, c in attacker_pwmodel.iterpasswords(n=len(tpwlist)*2) if len(pw)>=6][:len(tpwlist)]
-    print(real_pwm_f)
-    ######################################### Debug ##############################
-    # assert len(normal_guesses) == len(tpwlist)
-    # done = set()
-    # nwp, tpwp = 0, 0
-    # for i, w in enumerate(normal_guesses):
-    #     tpw = tpwlist[i]
-    #     killing = (typofixer.get_ball(tpw) | set([tpw])) - done
-    #     done |= killing
-    #     weight = totprob(killing)
-    #     nwp += pwm.prob(w)
-    #     tpwp += weight
-    #     if tpwp < nwp:
-    #         print "{!r},{!r},{}<-->{}".format(w, tpw, pwm.prob(w), weight)
-    ###########################################################################
-    # tpwp = pwm.prob_correction(tpwp)
-    # nwp = pwm.prob_correction(nwp)
-    # print tpwp, nwp, tpwp - nwp
-    for q in Q:
-        ball = typofixer.get_ball_union(tpwlist[:q])
-        print(set(normal_guesses[:q]) - ball)
-        lambda_q = totprob(normal_guesses[:q])
-        lambda_tilde_q = totprob(ball)
-        print("{:.5f}, {:.5f}, {:.5f}" \
-            .format(lambda_q, lambda_tilde_q, (lambda_tilde_q - lambda_q)))
 
 
 if __name__ == "__main__":
